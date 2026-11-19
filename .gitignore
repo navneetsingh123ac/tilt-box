@@ -1,0 +1,16 @@
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+# Unity regenerates these at the project root; DevTools/ projects are hand-written and tracked.
+/*.csproj
+/*.sln
+.vs/
+.idea/
+*.apk
+*.aab
+DevTools/**/bin/
+DevTools/**/obj/

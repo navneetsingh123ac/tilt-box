@@ -1,0 +1,17 @@
+{
+    "name": "TiltBox.Game",
+    "rootNamespace": "TiltBox.Game",
+    "references": [
+        "TiltBox.Core",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

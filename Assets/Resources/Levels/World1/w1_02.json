@@ -1,0 +1,13 @@
+{
+  "id": "w1_02", "world": 1, "w": 3, "h": 4,
+  // Everything moves at once
+  "cells": ["..R",
+            "...",
+            "...",
+            "..."],
+  "blocks": [
+    { "x": 0, "y": 2, "c": "r" },
+    { "x": 2, "y": 3, "c": "r" }
+  ],
+  "par": 2, "limit": 8, "kind": "teach"
+}
