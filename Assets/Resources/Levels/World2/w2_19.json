@@ -1,0 +1,15 @@
+{
+  "id": "w2_19", "world": 2, "w": 5, "h": 6,
+  // Generated (seed 2019010846) and auto-picked by score; par 4, optimal 1, randomWin 2%, deadEnds 3, ice 1, gates 0, wrongBin 0, score 4.4, seed 2019010846
+  "cells": ["#.#..",
+            ".B..#",
+            "R..#.",
+            ".....",
+            "#..#.",
+            "....."],
+  "blocks": [
+    { "x": 4, "y": 3, "c": "r" },
+    { "x": 2, "y": 3, "c": "b", "ice": true }
+  ],
+  "par": 4, "limit": 9, "kind": "easy"
+}

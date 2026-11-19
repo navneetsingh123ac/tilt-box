@@ -20,9 +20,9 @@ namespace TiltBox.Core
         public const int MaxHeight = 8;
         public const int MaxBlocks = 10;
 
-        // Cell characters from later worlds. Recognised so the error says "not supported yet"
+        // Cell characters from later worlds (4+). Recognised so the error says "not supported yet"
         // instead of "unknown character".
-        private const string FutureCellChars = "><^vs12rbygpkLO}{][";
+        private const string FutureCellChars = "s12rbygpkLO}{][";
 
         public static LevelDefinition Parse(string json, string sourceName = null)
         {
@@ -37,8 +37,15 @@ namespace TiltBox.Core
                 throw new LevelFormatException(label + ": invalid JSON: " + e.Message, e);
             }
 
+            return FromObject(root, label);
+        }
+
+        /// <summary>Builds a level from an already-parsed JSON value (e.g. one entry of a candidates file).</summary>
+        public static LevelDefinition FromObject(object root, string sourceName = null)
+        {
+            string label = sourceName ?? "level";
             var obj = root as Dictionary<string, object>;
-            if (obj == null) throw new LevelFormatException(label + ": the root must be a JSON object.");
+            if (obj == null) throw new LevelFormatException(label + ": the level must be a JSON object.");
 
             string id = GetString(obj, "id", label);
             label = id;
@@ -78,6 +85,8 @@ namespace TiltBox.Core
                     else if (c == '#') cell = Cell.Wall;
                     else if (char.IsUpper(c) && BlockColors.TryFromLetter(c, out BlockColor color))
                         cell = Cell.Bin(color);
+                    else if (Cell.GateChars.IndexOf(c) >= 0)
+                        cell = Cell.OneWay((Direction)Cell.GateChars.IndexOf(c));
                     else if (char.IsLower(c) && BlockColors.TryFromLetter(c, out _))
                         throw Fail(label, "cell '" + c + "' at (" + x + "," + y + ") is a paint cell (later world, not supported yet). " +
                                           "Blocks go in \"blocks\", not in \"cells\".");
@@ -99,13 +108,14 @@ namespace TiltBox.Core
 
             var positions = new GridPos[list.Count];
             var colors = new BlockColor[list.Count];
+            var iced = new bool[list.Count];
             var seen = new HashSet<GridPos>();
             for (int i = 0; i < list.Count; i++)
             {
                 var b = list[i] as Dictionary<string, object>;
                 string where = "block " + i;
                 if (b == null) throw Fail(label, where + " is not an object.");
-                foreach (string unsupported in new[] { "ice", "link", "key" })
+                foreach (string unsupported in new[] { "link", "key" })
                     if (b.ContainsKey(unsupported))
                         throw Fail(label, where + " uses \"" + unsupported + "\", which belongs to a later world and is not supported yet.");
 
@@ -117,6 +127,11 @@ namespace TiltBox.Core
                 if (c.Length != 1 || !char.IsLower(c[0]) || !BlockColors.TryFromLetter(c[0], out BlockColor color))
                     throw Fail(label, where + " has unknown colour \"" + c + "\" (use r b y g p k).");
                 Cell cell = layout[pos];
+                if (b.TryGetValue("ice", out object ice))
+                {
+                    if (!(ice is bool isIced)) throw Fail(label, where + " has \"ice\" that is not true or false.");
+                    iced[i] = isIced;
+                }
                 if (cell.Kind == CellKind.Wall) throw Fail(label, where + " at " + pos + " is on a wall.");
                 if (cell.Kind == CellKind.Bin) throw Fail(label, where + " at " + pos + " is on a bin.");
                 if (!seen.Add(pos)) throw Fail(label, "two blocks share cell " + pos + ".");
@@ -124,7 +139,7 @@ namespace TiltBox.Core
                 positions[i] = pos;
                 colors[i] = color;
             }
-            return new BoardState(positions, colors);
+            return new BoardState(positions, colors, null, iced);
         }
 
         private static LevelKind ParseKind(string s, string label)

@@ -1,0 +1,14 @@
+{
+  "id": "w2_02", "world": 2, "w": 4, "h": 5,
+  // Generated (seed 2002006197) and auto-picked by score; par 3, optimal 1, randomWin 5%, deadEnds 3, ice 1, gates 0, wrongBin 0, score 4.6, seed 2002006197
+  "cells": ["#.R#",
+            "....",
+            "....",
+            "....",
+            "...."],
+  "blocks": [
+    { "x": 2, "y": 2, "c": "r", "ice": true },
+    { "x": 0, "y": 2, "c": "r" }
+  ],
+  "par": 3, "limit": 8, "kind": "teach"
+}

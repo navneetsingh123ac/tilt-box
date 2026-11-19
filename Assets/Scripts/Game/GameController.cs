@@ -6,18 +6,25 @@ using UnityEngine;
 namespace TiltBox.Game
 {
     /// <summary>
-    /// Runs one world's level sequence: wires input -> <see cref="LevelSession"/> (rules) -> views.
+    /// Runs the level sequence across all worlds: wires input -> <see cref="LevelSession"/> (rules) -> views.
     /// The only class that knows about all the others; each view only exposes events and Show methods.
     /// </summary>
     [RequireComponent(typeof(SwipeInput), typeof(BoardView), typeof(HudView))]
     public sealed class GameController : MonoBehaviour
     {
-        [SerializeField] private int world = 1;
         [SerializeField] private float winScreenSeconds = 1.5f;
         [Tooltip("Show the animated hand on the first level until the first swipe (GDD §11).")]
         [SerializeField] private bool handHintOnFirstLevel = true;
 
-        private const string ProgressKey = "tiltbox.w{0}.level";
+        private const string ProgressKey = "tiltbox.level";
+        private const string OldWorld1ProgressKey = "tiltbox.w1.level"; // week-1 builds saved per world
+
+        // One-line tips when a world's new mechanic first appears (placeholder for the week-5 tutorial flow).
+        private static readonly Dictionary<string, string> Tips = new Dictionary<string, string>
+        {
+            { "w2_01", "Ice! An iced block skips one swipe, then slides." },
+            { "w3_01", "One-way gates: blocks pass only along the arrow." },
+        };
         private const string StarsKey = "tiltbox.stars.{0}";
 
         private SwipeInput _input;
@@ -50,14 +57,14 @@ namespace TiltBox.Game
 
         private void Start()
         {
-            _levels = LevelCatalog.LoadWorld(world);
+            _levels = LevelCatalog.LoadAll();
             if (_levels.Count == 0)
             {
-                Debug.LogError("No levels found for world " + world);
+                Debug.LogError("No levels found in Resources/Levels");
                 enabled = false;
                 return;
             }
-            int saved = PlayerPrefs.GetInt(string.Format(ProgressKey, world), 0);
+            int saved = PlayerPrefs.GetInt(ProgressKey, PlayerPrefs.GetInt(OldWorld1ProgressKey, 0));
             LoadLevel(Mathf.Clamp(saved, 0, _levels.Count - 1));
         }
 
@@ -76,7 +83,9 @@ namespace TiltBox.Game
             _busy = false;
             _board.Build(_session.Level);
             _hud.HidePanels();
-            _hud.SetLevel(_index + 1, _session.Level.Kind == LevelKind.Hard);
+            LevelDefinition level = _session.Level;
+            _hud.SetLevel(_index + 1, level.Kind == LevelKind.Hard, level.World, DifficultyPlan.WorldNames[level.World]);
+            if (Tips.TryGetValue(level.Id, out string tip)) _hud.Toast(tip, 6f);
             RefreshHud();
             FitCamera();
             SetHand(handHintOnFirstLevel && _index == 0);
@@ -124,12 +133,14 @@ namespace TiltBox.Game
             string key = string.Format(StarsKey, level.Id);
             if (stars > PlayerPrefs.GetInt(key, 0)) PlayerPrefs.SetInt(key, stars);
             int next = _index + 1;
-            PlayerPrefs.SetInt(string.Format(ProgressKey, world), next % _levels.Count);
+            PlayerPrefs.SetInt(ProgressKey, next % _levels.Count);
             PlayerPrefs.Save();
 
             _hud.ShowWin(stars, _session.MovesUsed, level.Par);
             yield return new WaitForSeconds(winScreenSeconds);
-            if (next >= _levels.Count) _hud.Toast("World " + world + " complete! Back to level 1.", 3f);
+            if (next >= _levels.Count) _hud.Toast("You finished every level! Back to level 1.", 3f);
+            else if (_levels[next].World != level.World)
+                _hud.Toast("World " + _levels[next].World + ": " + DifficultyPlan.WorldNames[_levels[next].World], 3f);
             LoadLevel(next);
         }
 

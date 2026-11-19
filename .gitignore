@@ -39,3 +39,6 @@ GoogleService-Info.plist
 *.exe
 /[Bb]uild*/
 /Release*/
+
+# Generator output (reproducible with DevTools/LevelLab fill)
+/LevelCandidates/

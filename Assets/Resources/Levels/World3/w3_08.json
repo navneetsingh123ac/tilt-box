@@ -1,0 +1,16 @@
+{
+  "id": "w3_08", "world": 3, "w": 5, "h": 6,
+  // Generated (seed -1286955652) and auto-picked by score; par 4, optimal 1, randomWin 3%, deadEnds 2, ice 1, gates 3, wrongBin 1, score 5.6, seed -1286955652
+  "cells": [".>#..",
+            "..#.#",
+            "R.B#.",
+            ".^.#.",
+            ".....",
+            "..Y#."],
+  "blocks": [
+    { "x": 1, "y": 2, "c": "r" },
+    { "x": 1, "y": 4, "c": "b", "ice": true },
+    { "x": 4, "y": 4, "c": "y" }
+  ],
+  "par": 4, "limit": 9, "kind": "easy"
+}

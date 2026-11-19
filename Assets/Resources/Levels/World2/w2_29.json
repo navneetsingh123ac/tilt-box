@@ -1,0 +1,17 @@
+{
+  "id": "w2_29", "world": 2, "w": 6, "h": 6,
+  // Generated (seed 2029007742) and auto-picked by score; par 4, optimal 1, randomWin 3%, deadEnds 0, ice 1, gates 0, wrongBin 0, score 2.5, seed 2029007742
+  "cells": ["..#...",
+            "B.....",
+            "......",
+            "..Y.#.",
+            "...#R.",
+            "...#.."],
+  "blocks": [
+    { "x": 5, "y": 5, "c": "r" },
+    { "x": 0, "y": 2, "c": "b" },
+    { "x": 3, "y": 2, "c": "y", "ice": true },
+    { "x": 5, "y": 2, "c": "b" }
+  ],
+  "par": 4, "limit": 9, "kind": "easy"
+}

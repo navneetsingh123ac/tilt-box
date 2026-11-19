@@ -57,9 +57,9 @@ namespace TiltBox.Core.Tests
         [Test] public void RejectsWrongRowCount() => AssertRejected(With(@"""h"": 3", @"""h"": 4"), "rows but h is 4");
         [Test] public void RejectsWrongRowLength() => AssertRejected(With(@""".#.""", @""".#..."""), "row 1 has 5");
         [Test] public void RejectsUnknownCellChar() => AssertRejected(With(@""".#.""", @"""@#."""), "unknown cell character '@'");
-        [Test] public void RejectsLaterWorldCell() => AssertRejected(With(@""".#.""", @""">#."""), "not supported yet");
+        [Test] public void RejectsLaterWorldCell() => AssertRejected(With(@""".#.""", @"""s#."""), "not supported yet");
         [Test] public void RejectsLaterWorldBlockFeature() =>
-            AssertRejected(With(@"""c"": ""r"" }", @"""c"": ""r"", ""ice"": true }"), "\"ice\"");
+            AssertRejected(With(@"""c"": ""r"" }", @"""c"": ""r"", ""link"": 1 }"), "\"link\"");
         [Test] public void RejectsBlockOnWall() => AssertRejected(With(@"""x"": 0, ""y"": 0", @"""x"": 1, ""y"": 1"), "on a wall");
         [Test] public void RejectsBlockOnBin() => AssertRejected(With(@"""x"": 0, ""y"": 0", @"""x"": 2, ""y"": 2"), "on a bin");
         [Test] public void RejectsBlockOutside() => AssertRejected(With(@"""x"": 0, ""y"": 0", @"""x"": 3, ""y"": 0"), "outside");
@@ -93,6 +93,20 @@ namespace TiltBox.Core.Tests
             many = many.Replace(@"{ ""x"": 0, ""y"": 0, ""c"": ""r"" }", blocks.ToString());
             AssertRejected(many, "maximum is 10");
         }
+
+        [Test]
+        public void ParsesGatesAndIce()
+        {
+            LevelDefinition level = LevelParser.Parse(With(@""".#.""", @""">^v""").Replace(@"""c"": ""r"" }", @"""c"": ""r"", ""ice"": true }"));
+            Assert.AreEqual(CellKind.Gate, level.Layout[0, 1].Kind);
+            Assert.AreEqual(Direction.Right, level.Layout[0, 1].Gate);
+            Assert.AreEqual(Direction.Up, level.Layout[1, 1].Gate);
+            Assert.AreEqual(Direction.Down, level.Layout[2, 1].Gate);
+            Assert.IsTrue(level.Start.IsIced(0));
+        }
+
+        [Test] public void RejectsNonBooleanIce() =>
+            AssertRejected(With(@"""c"": ""r"" }", @"""c"": ""r"", ""ice"": 1 }"), "true or false");
 
         [Test]
         public void ErrorMessage_NamesTheLevel()

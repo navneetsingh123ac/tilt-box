@@ -1,0 +1,17 @@
+{
+  "id": "w2_14", "world": 2, "w": 5, "h": 6,
+  // Generated (seed 2014006980) and auto-picked by score; par 6, optimal 1, randomWin 2%, deadEnds 2, ice 1, gates 0, wrongBin 1, score 5.7, seed 2014006980
+  "cells": [".....",
+            "#..##",
+            ".....",
+            "R....",
+            ".B.#.",
+            "....#"],
+  "blocks": [
+    { "x": 1, "y": 0, "c": "r" },
+    { "x": 3, "y": 5, "c": "b" },
+    { "x": 4, "y": 3, "c": "b", "ice": true },
+    { "x": 1, "y": 3, "c": "b", "ice": true }
+  ],
+  "par": 6, "limit": 11, "kind": "normal"
+}

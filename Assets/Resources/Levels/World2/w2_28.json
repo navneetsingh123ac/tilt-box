@@ -1,0 +1,16 @@
+{
+  "id": "w2_28", "world": 2, "w": 6, "h": 6,
+  // Generated (seed 2028009218) and auto-picked by score; par 4, optimal 1, randomWin 3%, deadEnds 2, ice 1, gates 0, wrongBin 0, score 4.3, seed 2028009218
+  "cells": [".....#",
+            ".Y..R.",
+            ".....B",
+            ".##...",
+            "#....#",
+            ".....#"],
+  "blocks": [
+    { "x": 4, "y": 5, "c": "r" },
+    { "x": 2, "y": 2, "c": "b", "ice": true },
+    { "x": 0, "y": 2, "c": "y" }
+  ],
+  "par": 4, "limit": 9, "kind": "easy"
+}

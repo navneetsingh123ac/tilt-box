@@ -26,7 +26,7 @@ namespace TiltBox.Game
         private static readonly Color StarOff = new Color32(0xD9, 0xCC, 0xB6, 0xFF);
 
         private Font _font;
-        private Text _level, _swipes, _threeStar, _winTitle, _winDetail, _toast;
+        private Text _world, _level, _swipes, _threeStar, _winTitle, _winDetail, _toast;
         private Image[] _hudStars, _winStars;
         private Button _undo;
         private GameObject _winPanel, _outPanel, _threeStarGroup;
@@ -50,7 +50,9 @@ namespace TiltBox.Game
 
             // Top bar
             RectTransform top = Panel(root, "Top", new Vector2(0, 1 - TopFraction), Vector2.one, Color.clear);
-            _level = Label(top, "Level", "Level 1", 84, FontStyle.Bold, new Vector2(0, 0.55f), new Vector2(1, 1));
+            _world = Label(top, "World", "WORLD 1 · TOY ROOM", 36, FontStyle.Bold, new Vector2(0, 0.82f), new Vector2(1, 0.98f));
+            _world.color = new Color(InkColour.r, InkColour.g, InkColour.b, 0.55f);
+            _level = Label(top, "Level", "Level 1", 84, FontStyle.Bold, new Vector2(0, 0.5f), new Vector2(1, 0.86f));
             _swipes = Label(top, "Swipes", "8 swipes left", 50, FontStyle.Normal, new Vector2(0.04f, 0.12f), new Vector2(0.5f, 0.5f));
             _threeStarGroup = new GameObject("ThreeStar", typeof(RectTransform));
             var group = (RectTransform)_threeStarGroup.transform;
@@ -84,8 +86,9 @@ namespace TiltBox.Game
             _toast = Label(root, "Toast", "", 46, FontStyle.Italic, new Vector2(0, 1 - TopFraction - 0.05f), new Vector2(1, 1 - TopFraction));
         }
 
-        public void SetLevel(int number, bool hard)
+        public void SetLevel(int number, bool hard, int world, string worldName)
         {
+            _world.text = ("World " + world + " · " + worldName).ToUpperInvariant();
             _level.text = hard ? "Level " + number + "  <color=#E5484D>HARD</color>" : "Level " + number;
             _level.supportRichText = true;
         }

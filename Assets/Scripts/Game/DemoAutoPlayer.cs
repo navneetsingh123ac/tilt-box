@@ -80,13 +80,35 @@ namespace TiltBox.Game
             for (float t = 0; t < seconds; t += Time.deltaTime) yield return null;
         }
 
+        /// <summary>
+        /// Renders the main camera into its own texture each frame (HUD included by drawing the canvas through
+        /// the camera), so recording works even when the editor's Game view is hidden or unfocused.
+        /// </summary>
         private IEnumerator Capture()
         {
+            Camera cam = Camera.main;
+            foreach (Canvas canvas in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+            {
+                canvas.renderMode = RenderMode.ScreenSpaceCamera;
+                canvas.worldCamera = cam;
+                canvas.planeDistance = 5f;
+                canvas.sortingOrder = 1000; // keep panels above board sprites, as in overlay mode
+            }
             var endOfFrame = new WaitForEndOfFrame();
             while (!Finished)
             {
                 yield return endOfFrame;
-                Texture2D shot = ScreenCapture.CaptureScreenshotAsTexture();
+                int h = 960, w = Mathf.RoundToInt(h * (float)Screen.width / Screen.height) / 2 * 2;
+                RenderTexture rt = RenderTexture.GetTemporary(w, h, 24);
+                cam.targetTexture = rt;
+                cam.Render();
+                cam.targetTexture = null;
+                RenderTexture previous = RenderTexture.active;
+                RenderTexture.active = rt;
+                var shot = new Texture2D(w, h, TextureFormat.RGB24, false);
+                shot.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+                RenderTexture.active = previous;
+                RenderTexture.ReleaseTemporary(rt);
                 File.WriteAllBytes(Path.Combine(captureFolder, "f" + (_frame++).ToString("D5") + ".jpg"), shot.EncodeToJPG(92));
                 Destroy(shot);
             }

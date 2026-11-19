@@ -27,5 +27,18 @@ namespace TiltBox.Game
             }
             return levels;
         }
+
+        /// <summary>Every world in order (World1, World2, ...), stopping at the first world with no levels.</summary>
+        public static List<LevelDefinition> LoadAll()
+        {
+            var all = new List<LevelDefinition>();
+            for (int world = 1; world < DifficultyPlan.WorldNames.Length; world++)
+            {
+                List<LevelDefinition> levels = LoadWorld(world);
+                if (levels.Count == 0) break;
+                all.AddRange(levels);
+            }
+            return all;
+        }
     }
 }

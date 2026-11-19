@@ -22,6 +22,7 @@ namespace TiltBox.Game
         private Transform _root;
         private BoardLayout _layout;
         private Transform[] _blocks;
+        private SpriteRenderer[] _ice;
         private readonly Dictionary<GridPos, SpriteRenderer> _binRings = new Dictionary<GridPos, SpriteRenderer>();
 
         public BoardLayout Layout => _layout;
@@ -50,6 +51,12 @@ namespace TiltBox.Game
                     case CellKind.Floor:
                         Sprite("Floor", PlaceholderArt.RoundedSquare, PlaceholderArt.FloorTile, OrderTile, _root, at, 0.94f);
                         break;
+                    case CellKind.Gate:
+                        Sprite("Floor", PlaceholderArt.RoundedSquare, PlaceholderArt.FloorTile, OrderTile, _root, at, 0.94f);
+                        var arrow = Sprite("Gate", PlaceholderArt.Chevron, new Color(PlaceholderArt.Wall.r, PlaceholderArt.Wall.g,
+                            PlaceholderArt.Wall.b, 0.8f), OrderBin, _root, at, 0.55f);
+                        arrow.transform.localRotation = Quaternion.Euler(0, 0, GateAngle(cell.Gate));
+                        break;
                     case CellKind.Wall:
                         Sprite("Wall", PlaceholderArt.RoundedSquare, PlaceholderArt.Wall, OrderTile, _root, at, 0.98f);
                         Sprite("WallShine", PlaceholderArt.Highlight, new Color(1, 1, 1, 0.12f), OrderBin, _root, at, 0.98f);
@@ -65,6 +72,7 @@ namespace TiltBox.Game
 
             BoardState s = level.Start;
             _blocks = new Transform[s.BlockCount];
+            _ice = new SpriteRenderer[s.BlockCount];
             for (int i = 0; i < s.BlockCount; i++)
             {
                 BlockColor colour = s.ColorOf(i);
@@ -73,6 +81,7 @@ namespace TiltBox.Game
                 Sprite("Shine", PlaceholderArt.Highlight, new Color(1, 1, 1, 0.22f), OrderSymbol, body.transform, Vector3.zero, 1f);
                 Sprite("Symbol", PlaceholderArt.SymbolOf(colour), new Color(1, 1, 1, 0.92f), OrderSymbol, body.transform, Vector3.zero, 0.5f);
                 _blocks[i] = body.transform;
+                _ice[i] = Sprite("Ice", PlaceholderArt.Frost, PlaceholderArt.Ice, OrderSymbol + 1, body.transform, Vector3.zero, 1.04f);
             }
             ShowState(s);
         }
@@ -89,6 +98,9 @@ namespace TiltBox.Game
                 b.localPosition = CellToLocal(state.PositionOf(i));
                 b.localScale = Vector3.one * 0.86f;
                 b.localRotation = Quaternion.identity;
+                _ice[i].gameObject.SetActive(state.IsIced(i) && !state.IsBinned(i));
+                _ice[i].transform.localScale = Vector3.one * 1.04f;
+                _ice[i].color = PlaceholderArt.Ice;
             }
             foreach (var ring in _binRings.Values) ring.transform.localScale = Vector3.one * 0.94f;
         }
@@ -107,6 +119,11 @@ namespace TiltBox.Game
 
             int running = 0;
             int binIndex = 0;
+            foreach (int cracked in result.Cracked)
+            {
+                running++;
+                StartCoroutine(Track(Crack(cracked), () => running--));
+            }
             foreach (BlockMove m in result.Moves)
             {
                 running++;
@@ -162,6 +179,33 @@ namespace TiltBox.Game
 
             FlashIfWrongBin(m, dir);
             yield return Bounce(b, dir);
+        }
+
+        /// <summary>Ice shatters: the frost swells and fades, with a few white chips.</summary>
+        private IEnumerator Crack(int block)
+        {
+            SpriteRenderer ice = _ice[block];
+            StartCoroutine(Burst(_blocks[block].localPosition, Color.white, 5, 0.7f));
+            const float duration = 0.22f;
+            for (float t = 0; t < duration; t += Time.deltaTime)
+            {
+                float u = t / duration;
+                ice.transform.localScale = Vector3.one * (1.04f + 0.3f * u);
+                ice.color = new Color(PlaceholderArt.Ice.r, PlaceholderArt.Ice.g, PlaceholderArt.Ice.b, PlaceholderArt.Ice.a * (1f - u));
+                yield return null;
+            }
+            ice.gameObject.SetActive(false);
+        }
+
+        private static float GateAngle(Direction d)
+        {
+            switch (d)
+            {
+                case Direction.Right: return -90f;
+                case Direction.Down: return 180f;
+                case Direction.Left: return 90f;
+                default: return 0f;
+            }
         }
 
         private IEnumerator Bounce(Transform b, Direction dir)

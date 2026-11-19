@@ -54,6 +54,24 @@ namespace TiltBox.Game
             }
         }
 
+        /// <summary>Chevron pointing up (rotate for other directions); drawn on one-way gates.</summary>
+        public static Sprite Chevron => Get("chevron", p => Polygon(p, new[]
+        {
+            new Vector2(0f, 0.75f), new Vector2(0.8f, -0.05f), new Vector2(0.8f, -0.5f),
+            new Vector2(0f, 0.3f), new Vector2(-0.8f, -0.5f), new Vector2(-0.8f, -0.05f),
+        }));
+
+        /// <summary>Frost overlay for iced blocks: a rounded square with a few diagonal streaks cut out.</summary>
+        public static Sprite Frost => Get("frost", p =>
+        {
+            float box = RoundBox(p, 0.92f, 0.3f);
+            float streak = Mathf.Abs(Mathf.Repeat(p.x + p.y + 0.3f, 0.75f) - 0.375f) - 0.05f;
+            return Mathf.Max(box, -streak);
+        });
+
+        // Light enough that the block's colour still shows through (colour-blind symbol stays visible too).
+        public static readonly Color Ice = new Color(0.82f, 0.95f, 1f, 0.6f);
+
         /// <summary>Rounded square with 9-slice borders, for panels and buttons of any aspect ratio.</summary>
         public static Sprite Panel => Get("panel", p => RoundBox(p, 0.94f, 0.36f), 30);
 
