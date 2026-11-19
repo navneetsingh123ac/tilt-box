@@ -1,0 +1,526 @@
+<title>Tilt Box GDD</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one engineering-reference column; toy-box colour chips mark the six block colours; tables scroll in place */
+:root {
+  --bg: #f2f5fa; --surface: #ffffff; --fg: #1c2333; --muted: #5d6679; --line: #dde3ee;
+  --accent: #ff5a3c; --accent-soft: #ffe7e1; --ok: #1d8a55; --ok-soft: #dff3e8; --info: #2f6fdb; --info-soft: #e3ecfb;
+  --c-red: #ef4a4a; --c-blue: #3d7bf2; --c-yellow: #f5b82e; --c-green: #2fb36b; --c-purple: #9a5cf0; --c-pink: #f06aa8;
+  --display: "Lilita One", "Arial Rounded MT Bold", sans-serif;
+  --body: "Rubik", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12161f; --surface: #1a2030; --fg: #e8ecf5; --muted: #9aa3b8; --line: #2c3447;
+  --accent: #ff7a5e; --accent-soft: #3a1d17; --ok: #5fd598; --ok-soft: #14301f; --info: #7aa6ff; --info-soft: #172440; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12161f; --surface: #1a2030; --fg: #e8ecf5; --muted: #9aa3b8; --line: #2c3447;
+  --accent: #ff7a5e; --accent-soft: #3a1d17; --ok: #5fd598; --ok-soft: #14301f; --info: #7aa6ff; --info-soft: #172440; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16.5px; line-height: 1.6; }
+.wrap { max-width: 920px; margin: 0 auto; padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.12; text-wrap: balance; margin: 0; letter-spacing: 0.01em; }
+h1 { font-size: clamp(2.4rem, 7vw, 3.6rem); }
+h2 { font-size: 1.6rem; margin-top: 52px; padding-top: 20px; border-top: 1px solid var(--line); }
+h2 .n { color: var(--accent); margin-right: 8px; }
+h3 { font-size: 1.15rem; margin-top: 26px; }
+p, li { max-width: 72ch; }
+p { margin: 10px 0; }
+ul, ol { padding-left: 22px; margin: 10px 0; }
+li { margin: 4px 0; }
+a { color: var(--info); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code { font-family: var(--mono); font-size: 0.85em; background: var(--info-soft); padding: 1px 5px; border-radius: 4px; }
+.eyebrow { font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+.lede { font-size: 1.15rem; color: var(--muted); margin-top: 12px; }
+.chips { display: flex; gap: 6px; margin-top: 18px; flex-wrap: wrap; }
+.chips span { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; color: #fff; font-size: 1rem; font-weight: 600; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.18); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 10px; margin-top: 22px; }
+.facts div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; min-width: 0; }
+.facts b { display: block; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.facts span { font-weight: 500; }
+.toc { columns: 3 200px; column-gap: 24px; margin-top: 22px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; font-size: 0.93rem; }
+.toc a { display: block; text-decoration: none; color: var(--fg); padding: 2px 0; break-inside: avoid; }
+.toc a:hover { color: var(--accent); }
+.note { background: var(--info-soft); border-radius: 10px; padding: 14px 16px; margin: 16px 0; }
+.note strong { color: var(--info); }
+.warn { background: var(--accent-soft); border-radius: 10px; padding: 14px 16px; margin: 16px 0; }
+.warn strong { color: var(--accent); }
+.good { background: var(--ok-soft); border-radius: 10px; padding: 14px 16px; margin: 16px 0; }
+.good strong { color: var(--ok); }
+.code { font-family: var(--mono); font-size: 0.84rem; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; white-space: pre; line-height: 1.6; }
+.table { overflow-x: auto; margin: 12px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 7px 11px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.k { font-family: var(--mono); font-size: 0.84rem; white-space: nowrap; color: var(--accent); }
+td.num { white-space: nowrap; color: var(--ok); font-weight: 600; }
+.board { display: flex; flex-wrap: wrap; gap: 22px; margin: 14px 0; align-items: flex-start; }
+.board figure { margin: 0; min-width: 0; }
+.board figcaption { font-size: 0.85rem; color: var(--muted); margin-top: 6px; max-width: 26ch; }
+.grid3 { display: grid; grid-template-columns: repeat(5, 34px); gap: 3px; background: var(--line); padding: 3px; border-radius: 8px; width: max-content; }
+.grid3 i { width: 34px; height: 34px; border-radius: 6px; background: var(--surface); display: grid; place-items: center; font-style: normal; font-size: 0.9rem; color: #fff; font-weight: 600; }
+.grid3 i.w { background: var(--muted); }
+.grid3 i.r { background: var(--c-red); box-shadow: inset 0 -4px 0 rgba(0,0,0,0.18); }
+.grid3 i.b { background: var(--c-blue); box-shadow: inset 0 -4px 0 rgba(0,0,0,0.18); }
+.grid3 i.br { background: transparent; border: 3px dashed var(--c-red); }
+.grid3 i.bb { background: transparent; border: 3px dashed var(--c-blue); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap: 12px; margin-top: 12px; }
+.cols > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; min-width: 0; }
+.cols h3 { margin-top: 0; font-size: 1.05rem; }
+.cols ul { font-size: 0.93rem; }
+footer { margin-top: 52px; color: var(--muted); font-size: 0.9rem; }
+@media (max-width: 480px) { body { font-size: 16px; } }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Sketchify Studio · Game design document v1.0 · Working title · 17 Nov 2026</div>
+  <h1>Tilt Box</h1>
+  <p class="lede">A swipe-to-tilt sorting puzzle. You never move a block yourself: you tilt the whole box, every block slides at once, and each colour has to end up in its own bin. This document is everything the engineer needs to build version 1.0 in about 6 weeks.</p>
+  <div class="chips" aria-label="The six block colours and their symbols">
+    <span style="background:var(--c-red)">●</span><span style="background:var(--c-blue)">▲</span><span style="background:var(--c-yellow)">■</span><span style="background:var(--c-green)">★</span><span style="background:var(--c-purple)">♥</span><span style="background:var(--c-pink)">◆</span>
+  </div>
+
+  <div class="facts">
+    <div><b>Genre</b><span>Hybrid-casual logic puzzle</span></div>
+    <div><b>Platforms</b><span>Android + PC (Google Play Games)</span></div>
+    <div><b>Engine</b><span>Unity 6 LTS, 2D, portrait</span></div>
+    <div><b>Level length</b><span>1–2 minutes</span></div>
+    <div><b>Launch content</b><span>300 levels, 10 worlds, daily puzzles</span></div>
+    <div><b>Money</b><span>Rewarded ads + light interstitials</span></div>
+    <div><b>Build time</b><span>About 6 weeks</span></div>
+    <div><b>Also for</b><span>Learning Unity before GHAR</span></div>
+  </div>
+
+  <nav class="toc" aria-label="Contents">
+    <a href="#pitch">1. Pitch and goals</a>
+    <a href="#rules">2. Core rules</a>
+    <a href="#resolve">3. How a swipe is resolved</a>
+    <a href="#mech">4. Mechanics by world</a>
+    <a href="#levels">5. Levels and the generator</a>
+    <a href="#difficulty">6. Difficulty, moves and stars</a>
+    <a href="#session">7. Session loop</a>
+    <a href="#economy">8. Coins, chests and the shelf</a>
+    <a href="#daily">9. Daily and weekly</a>
+    <a href="#ads">10. Ads and purchases</a>
+    <a href="#ftue">11. First session</a>
+    <a href="#ui">12. Screens</a>
+    <a href="#feel">13. Look, feel and sound</a>
+    <a href="#tech">14. Technical spec</a>
+    <a href="#save">15. Save data</a>
+    <a href="#analytics">16. Analytics and targets</a>
+    <a href="#plan">17. 6-week build plan</a>
+    <a href="#risks">18. Risks and open questions</a>
+  </nav>
+
+  <!-- 1 -->
+  <h2 id="pitch"><span class="n">1</span>Pitch and goals</h2>
+  <p><b>Hook:</b> "One swipe moves everything." Sort games normally have you tap a tube, then another tube. Tilt Box has no tapping: the puzzle is choosing the <i>order</i> of swipes, because every block slides until it hits something.</p>
+  <h3>Design goals</h3>
+  <ul>
+    <li><b>Understood in 3 seconds</b> from a short video: a swipe, everything slides, blocks drop into bins.</li>
+    <li><b>Lots of content for little work:</b> levels are generated and checked by a solver, then picked by hand.</li>
+    <li><b>Players come back</b> through short goals (chests), medium goals (new worlds, the shelf collection), daily reasons (daily puzzle, gift calendar) and weekly variety (Weekend Tower). Details in §7–§9.</li>
+    <li><b>Fair:</b> no lives, no energy timers, no streaks that reset, and no ad after a loss.</li>
+    <li><b>A Unity learning project</b> that teaches the pipeline (Unity, AdMob, Google Play, PC builds) before GHAR.</li>
+  </ul>
+
+  <!-- 2 -->
+  <h2 id="rules"><span class="n">2</span>Core rules</h2>
+  <ul>
+    <li>The <b>board</b> is a grid, from 3×3 up to 7×8 (portrait). Each cell is floor, wall, or a special cell (§4).</li>
+    <li><b>Blocks</b> are coloured squares. Up to 6 colours, each with its own symbol (● ▲ ■ ★ ♥ ◆) so colour-blind players can play.</li>
+    <li><b>Bins</b> are coloured holes in the board. A block that slides into a bin of <b>its own colour</b> drops in and disappears. A bin of a <b>different colour</b> acts like a wall.</li>
+    <li>The player <b>swipes</b> up, down, left or right. <b>Every block on the board slides</b> in that direction until something stops it (a wall, the board edge, another block that has stopped, or a wrong-coloured bin).</li>
+    <li><b>Blocks never merge</b> and never push each other further than they would slide.</li>
+    <li><b>Win:</b> every coloured block is in a bin.</li>
+    <li><b>Move limit:</b> each level has a limit on swipes (§6). Using them all without winning shows the "Out of moves" screen.</li>
+    <li>A swipe that would move nothing doesn't count as a move (a small shake shows nothing moved).</li>
+  </ul>
+  <div class="board">
+    <figure>
+      <div class="grid3" aria-label="Example board before the swipe">
+        <i></i><i class="w"></i><i></i><i></i><i class="br"></i>
+        <i class="r">●</i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i class="b">▲</i><i></i><i></i>
+        <i></i><i class="w"></i><i></i><i></i><i class="bb"></i>
+        <i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <figcaption>Example: red block, blue block, a red bin top right and a blue bin on the right edge. Grey cells are walls.</figcaption>
+    </figure>
+    <figure>
+      <div class="code">Solution (3 swipes, par 3):
+1. Swipe right → blue slides to (4,2);
+                 red slides to (4,1)
+2. Swipe up    → red enters the red
+                 bin at (4,0) ✔
+                 blue rises to (4,1)
+                 and stops: the red bin
+                 is a wall for blue
+3. Swipe down  → blue slides down into
+                 the blue bin at (4,3) ✔</div>
+      <figcaption>Reading order for designers: rows top to bottom, columns left to right, origin (0,0) at the top left.</figcaption>
+    </figure>
+  </div>
+
+  <!-- 3 -->
+  <h2 id="resolve"><span class="n">3</span>How a swipe is resolved (exact algorithm)</h2>
+  <p>This must be <b>pure C#</b> with no Unity objects, so the same code runs in the game, the solver and the tests.</p>
+  <div class="code">ResolveSwipe(board, dir):
+  1. If any block is iced, mark those blocks "cracking": they don't move this swipe and act as obstacles.
+  2. Sort the movable blocks front-first along dir
+     (swipe right → largest x first; swipe up → smallest y first).
+  3. For each unit in that order (a unit = one block, or a linked pair, §4):
+       repeat:
+         next = pos + dir
+         if next is outside the board, a wall, a closed lock wall,
+            or occupied by a block that has finished moving        → stop
+         if next is a gate whose arrow ≠ dir                        → stop
+         if next is a bin:   same colour → block is binned (removed), end
+                             other colour → stop
+         if next is a keyhole: key block → binned into keyhole, end; else stop
+         if next is a portal:  if its partner's cell is free → move to partner, keep going
+                               else → stop
+         move into next
+         if next is a paint cell → block takes the paint colour, keep going
+         if next is a sticky pad → stop here
+  4. Ice: every "cracking" block loses its ice (it can move next swipe).
+  5. Conveyors: each block standing on a conveyor moves 1 cell in the conveyor's
+     direction if that cell is free (front-first order; no chaining).
+  6. Keyholes: if any keyhole received a key, every lock wall on the board opens.
+  7. If no block moved, nothing was binned and no ice cracked → the swipe is ignored (doesn't cost a move).
+  8. Win check: no coloured blocks left → level complete.</div>
+  <div class="note"><strong>Why front-first works:</strong> blocks never merge, so moving the front block first, then the next one up to it, gives exactly the result of everything moving at once. The animation still plays all slides at the same time.</div>
+
+  <!-- 4 -->
+  <h2 id="mech"><span class="n">4</span>Mechanics by world</h2>
+  <p>10 worlds of 30 levels. Each world adds <b>one</b> new mechanic, taught in its first 3 levels on tiny boards where the new rule is the only way to win. After that it mixes with everything from earlier worlds.</p>
+  <div class="table"><table>
+    <thead><tr><th>World</th><th>Theme</th><th>New mechanic</th><th>Exact rule</th><th>Board</th><th>Colours</th></tr></thead>
+    <tbody>
+      <tr><td class="k">1</td><td>Toy Room</td><td>Blocks, walls, bins</td><td>§2</td><td>3×3 → 6×6</td><td>1–3</td></tr>
+      <tr><td class="k">2</td><td>Ice Rink</td><td><b>Ice blocks</b></td><td>An iced block doesn't move on the first swipe; it cracks instead and acts as a wall that swipe. After that it slides normally.</td><td>5×5 → 6×6</td><td>2–3</td></tr>
+      <tr><td class="k">3</td><td>Train Yard</td><td><b>One-way gates</b></td><td>A floor cell with an arrow. Blocks may pass only in the arrow's direction; from any other direction it's a wall.</td><td>5×6 → 6×7</td><td>2–4</td></tr>
+      <tr><td class="k">4</td><td>Candy Shop</td><td><b>Sticky pads</b></td><td>A block that enters a sticky pad stops on it. The next swipe moves it off normally.</td><td>6×6 → 6×7</td><td>3–4</td></tr>
+      <tr><td class="k">5</td><td>Space Lab</td><td><b>Portals</b></td><td>Pairs of portals (same colour ring, not a block colour). A block entering one comes out of the other and keeps sliding in the same direction. If the exit is blocked, the portal acts as a wall.</td><td>6×6 → 6×8</td><td>3–4</td></tr>
+      <tr><td class="k">6</td><td>Art Studio</td><td><b>Paint cells</b></td><td>A block passing over a paint cell becomes that colour and keeps sliding.</td><td>6×7 → 7×7</td><td>3–5</td></tr>
+      <tr><td class="k">7</td><td>Castle</td><td><b>Keys and locks</b></td><td>A key block (no colour) can only go into a keyhole. When a keyhole is filled, all lock walls on the board open at the end of that swipe.</td><td>6×7 → 7×8</td><td>3–5</td></tr>
+      <tr><td class="k">8</td><td>Factory</td><td><b>Conveyors</b></td><td>After every swipe, a block resting on a conveyor moves 1 cell in its direction (if free).</td><td>6×7 → 7×8</td><td>3–5</td></tr>
+      <tr><td class="k">9</td><td>Workshop</td><td><b>Linked blocks</b></td><td>Two blocks joined by a bar move as one unit. The unit stops when either block would stop. Each block can bin separately; once one is binned the other is free.</td><td>6×7 → 7×8</td><td>4–6</td></tr>
+      <tr><td class="k">10</td><td>Rooftop</td><td>Mastery</td><td>All mechanics combined</td><td>7×8</td><td>4–6</td></tr>
+    </tbody>
+  </table></div>
+  <p><b>Limits for the solver:</b> at most 10 blocks on a board and at most 2 portal pairs, so every level can be solved and checked in under a second in the editor.</p>
+
+  <!-- 5 -->
+  <h2 id="levels"><span class="n">5</span>Levels and the generator</h2>
+  <h3>Level file (JSON)</h3>
+  <div class="code">{
+  "id": "w2_14", "world": 2, "w": 6, "h": 6,
+  "cells": ["......",
+            ".#..R.",          // . floor   # wall   R/B/Y/G/P/K bin of that colour
+            "......",          // &gt;&lt;^v one-way gate   s sticky   1/2 portal pair
+            "..#...",          // r/b/y/g/p/k paint cell   L lock wall   O keyhole
+            "B.....",          // conveyors: } { ] [  (right, left, down, up)
+            "......"],
+  "blocks": [ { "x": 0, "y": 2, "c": "r" },
+              { "x": 3, "y": 5, "c": "b", "ice": true },
+              { "x": 4, "y": 0, "c": "r", "link": 1 }, { "x": 5, "y": 0, "c": "b", "link": 1 },
+              { "x": 2, "y": 2, "key": true } ],
+  "par": 7, "limit": 12, "kind": "normal"   // normal | easy | hard | teach
+}</div>
+  <h3>Solver</h3>
+  <ul>
+    <li>Breadth-first search over board states (block positions, colours, ice, links, locks open). 4 moves per state; skip ignored swipes; remember visited states by hash.</li>
+    <li>Outputs <b>par</b> (fewest swipes to win), the number of different optimal solutions, and the optimal first swipe from any state (used for <b>hints</b> in-game).</li>
+    <li>Search depth limit 22 swipes. A level with no solution in that depth is rejected.</li>
+  </ul>
+  <h3>Generator (Unity editor tool)</h3>
+  <ol>
+    <li>Pick a board size, colours and mechanics allowed for the world.</li>
+    <li>Place walls, bins, special cells and blocks at random, then run the solver.</li>
+    <li>Score the result:
+      <ul>
+        <li><b>par</b> inside the target band for that slot (§6);</li>
+        <li><b>random win rate:</b> play 200 random swipe sequences within the move limit; the share that wins must be ≤ 15% for normal levels, ≤ 5% for hard levels, any for teach levels. This stops levels that solve themselves.</li>
+        <li><b>optimal solutions ≤ 3</b> (a clear "aha" is better than many routes);</li>
+        <li><b>at least one dead end</b> from the start for normal and hard levels (a swipe that makes the level unwinnable), so choices matter.</li>
+      </ul>
+    </li>
+    <li>Keep the 10 best per slot. A person plays and picks one. This hand-pick step is what makes levels feel designed.</li>
+  </ol>
+  <p>Teach levels (the first 3 of each world) and levels 1–10 are <b>made by hand</b>.</p>
+
+  <!-- 6 -->
+  <h2 id="difficulty"><span class="n">6</span>Difficulty, moves and stars</h2>
+  <h3>The wave pattern</h3>
+  <p>Difficulty doesn't only go up; it goes up and down. Within every 10 levels:</p>
+  <div class="table"><table>
+    <thead><tr><th>Position in each 10</th><th>Kind</th><th>Target par</th><th>Reward</th></tr></thead>
+    <tbody>
+      <tr><td class="k">1–7</td><td>Normal</td><td>The world's band, rising slowly across its 30 levels</td><td>Normal</td></tr>
+      <tr><td class="k">8–9</td><td>Easy (breather)</td><td>Band minimum − 1</td><td>Normal</td></tr>
+      <tr><td class="k">10</td><td>Hard (labelled "HARD")</td><td>Band maximum + 2, random win ≤ 5%</td><td>Coins ×2</td></tr>
+    </tbody>
+  </table></div>
+  <div class="table"><table>
+    <thead><tr><th>World</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th></tr></thead>
+    <tbody>
+      <tr><td>Par band</td><td class="k">1–6</td><td class="k">4–8</td><td class="k">5–9</td><td class="k">5–10</td><td class="k">6–10</td><td class="k">6–11</td><td class="k">7–12</td><td class="k">7–12</td><td class="k">8–13</td><td class="k">8–14</td></tr>
+      <tr><td>Slack (extra moves)</td><td class="k">+6</td><td class="k">+5</td><td class="k">+5</td><td class="k">+4</td><td class="k">+4</td><td class="k">+4</td><td class="k">+3</td><td class="k">+3</td><td class="k">+3</td><td class="k">+3</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><b>Move limit</b> = par + slack.</li>
+    <li><b>Stars:</b> 3★ = win in par swipes or fewer; 2★ = par + 2 or fewer; 1★ = any win. The HUD shows how many swipes are left for 3★.</li>
+    <li><b>Undo:</b> each level gives 1 free undo. More cost an undo token (§8).</li>
+    <li><b>Hint:</b> shows an arrow for the next optimal swipe from the current state (from the solver). Costs a hint token.</li>
+    <li><b>Restart:</b> always free and instant. The move count resets.</li>
+  </ul>
+
+  <!-- 7 -->
+  <h2 id="session"><span class="n">7</span>Session loop</h2>
+  <ul>
+    <li><b>Win screen</b> lasts 1.5 s: stars, coins counting up, and the chest bar filling. The next level then loads automatically unless the player taps Home. No menu between levels.</li>
+    <li><b>Out of moves</b> screen offers "+5 moves (watch ad)" and "Retry" (free). No interstitial ever follows a loss.</li>
+    <li><b>Skip:</b> after 3 failed tries on the same level, offer "Skip level (watch ad)". A skipped level gives no stars, and the player can come back to it.</li>
+    <li><b>Always visible:</b> the chest progress bar ("2 more levels") on the HUD and the win screen.</li>
+  </ul>
+
+  <!-- 8 -->
+  <h2 id="economy"><span class="n">8</span>Coins, chests and the shelf</h2>
+  <h3>Coins earned</h3>
+  <div class="table"><table>
+    <thead><tr><th>Source</th><th>Coins</th></tr></thead>
+    <tbody>
+      <tr><td>Win a level</td><td class="num">10, +5 per star above one (3★ = 20)</td></tr>
+      <tr><td>Hard level</td><td class="num">×2</td></tr>
+      <tr><td>First-time 3★ on a replayed level</td><td class="num">+10</td></tr>
+      <tr><td>Daily puzzle</td><td class="num">30</td></tr>
+      <tr><td>Weekend Tower level / full tower</td><td class="num">15 each / +200</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Chests</h3>
+  <ul>
+    <li><b>Small chest every 5 levels:</b> 40–80 coins, plus a 50% chance of 1 hint or 1 undo token.</li>
+    <li><b>World chest every 30 levels:</b> 300 coins, 2 hints, and one shelf item from that world.</li>
+    <li>"Double it (watch ad)" on every chest.</li>
+  </ul>
+  <h3>Tokens</h3>
+  <p>Start with 3 hints and 3 undo tokens. Buy more in the shop: hint 100 coins, undo 50 coins. Each can also come from a rewarded ad when you have none.</p>
+  <h3>The shelf (collection)</h3>
+  <p>A shelf on the home screen that fills up with what you collect. <b>40 items at launch:</b></p>
+  <div class="table"><table>
+    <thead><tr><th>Type</th><th>Count</th><th>Price (coins)</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td>Box skins (how the board and blocks look)</td><td class="k">12</td><td class="num">150 – 400</td><td>Cosmetic</td></tr>
+      <tr><td>Backgrounds</td><td class="k">8</td><td class="num">300 – 800</td><td>Cosmetic</td></tr>
+      <tr><td>Figurines (one per world from the world chest, others bought)</td><td class="k">20</td><td class="num">200 – 1,200</td><td>Cosmetic; they stand on the shelf</td></tr>
+    </tbody>
+  </table></div>
+  <p>A player earns about 30 coins per level on average (wins plus chests), so 300 levels give about 9,000 coins. Dailies, gifts and towers add more. The whole shelf costs about 20,000, so it keeps a player collecting for about 2 months <span style="color:var(--muted)">(estimate to check with real players)</span>.</p>
+
+  <!-- 9 -->
+  <h2 id="daily"><span class="n">9</span>Daily and weekly reasons to return</h2>
+  <div class="cols">
+    <div><h3>Daily Puzzle</h3><ul>
+      <li>Unlocks after level 10.</li>
+      <li>One puzzle per day, the same for every player: puzzle number = days since launch, using the phone's local date. 365 are pre-made, chosen from generated levels with par 7–10.</li>
+      <li>No move limit; stars by par. Reward 30 coins.</li>
+      <li><b>Share button</b> copies text like:<br><code>Tilt Box #42 ➡️⬆️⬅️⬇️➡️ 5 moves ⭐⭐⭐</code></li>
+      <li>A total "days solved" counter (badges at 7, 30 and 100). It never resets.</li>
+    </ul></div>
+    <div><h3>Gift calendar</h3><ul>
+      <li>7 gifts, one per day you open the game: 50 coins, 1 hint, 100 coins, 2 undos, 150 coins, 2 hints, a big chest with a calendar-only box skin.</li>
+      <li><b>If you miss a day, it waits</b> at the same gift. It never resets.</li>
+      <li>After day 7 it starts again, with a new skin on day 7.</li>
+    </ul></div>
+    <div><h3>Weekend Tower</h3><ul>
+      <li>Saturday and Sunday, local time.</li>
+      <li>10 hard levels with one special rule, for example only 3 directions allowed, swipes reversed, or conveyors that move twice.</li>
+      <li>Reward: 15 coins per level, 200 coins and an <b>exclusive skin</b> for the top.</li>
+      <li>8 towers at launch, rotating. A missed skin comes back about 2 months later, so missing a weekend never means losing it forever.</li>
+    </ul></div>
+    <div><h3>Reminders</h3><ul>
+      <li>After a player solves their first daily puzzle, ask: "Remind me when the next puzzle is ready?"</li>
+      <li>At most <b>one notification a day</b>, at 18:00 local, and only if they haven't played that day.</li>
+      <li>Can be turned off in settings.</li>
+      <li>On exit or pause, show a "Tomorrow" teaser: the new daily puzzle and the next gift.</li>
+    </ul></div>
+  </div>
+
+  <!-- 10 -->
+  <h2 id="ads"><span class="n">10</span>Ads and purchases</h2>
+  <h3>Rewarded ads (the player chooses)</h3>
+  <div class="table"><table>
+    <thead><tr><th>Where</th><th>Reward</th><th>Limit</th></tr></thead>
+    <tbody>
+      <tr><td>Out-of-moves screen</td><td>+5 moves</td><td>Once per attempt</td></tr>
+      <tr><td>Hint button with 0 hints</td><td>1 hint</td><td>None</td></tr>
+      <tr><td>Undo button with 0 undo tokens</td><td>1 undo</td><td>None</td></tr>
+      <tr><td>After 3 fails on a level</td><td>Skip the level</td><td>Once per level</td></tr>
+      <tr><td>Any chest</td><td>Double the chest</td><td>Once per chest</td></tr>
+      <tr><td>Weekend Tower, after a failed level</td><td>Retry a tower level with +3 moves</td><td>Once per level</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Interstitials (forced), with strict rules</h3>
+  <ul>
+    <li>Never before level 15.</li>
+    <li>At most one every 3 level wins, and at least 120 s since any ad.</li>
+    <li><b>Only after a win. Never after a loss</b>, never during a level, never in the daily puzzle or the tower.</li>
+    <li>Never within 60 s after a rewarded ad.</li>
+  </ul>
+  <h3>One purchase (recommended)</h3>
+  <p><b>"No forced ads"</b>, about ₹149 / $2.99: removes interstitials forever. Rewarded ads stay available because they're optional. Players who love the game often buy this, and it keeps the ones who hate ads.</p>
+  <p class="note"><strong>Ad setup:</strong> Google AdMob through the Google Mobile Ads Unity plugin. Your developer site already has app-ads.txt. Every ad call goes through one <code>IAdService</code> interface with a "no ads" version, so the game works when ads fail or are blocked: hide the button and never give the reward.</p>
+
+  <!-- 11 -->
+  <h2 id="ftue"><span class="n">11</span>First session (most players decide here)</h2>
+  <div class="table"><table>
+    <thead><tr><th>Level</th><th>Board</th><th>What it teaches</th><th>Help</th></tr></thead>
+    <tbody>
+      <tr><td class="k">1</td><td>3×3, 1 red block, 1 red bin</td><td>Swipe moves blocks</td><td>An animated hand shows the swipe until the first one</td></tr>
+      <tr><td class="k">2</td><td>3×4, 2 red blocks, 1 bin</td><td>Everything moves at once</td><td>—</td></tr>
+      <tr><td class="k">3</td><td>4×4 with a wall</td><td>Walls stop blocks</td><td>—</td></tr>
+      <tr><td class="k">4</td><td>4×4, 2 colours</td><td>Wrong bin = wall</td><td>The wrong bin flashes when a block stops at it</td></tr>
+      <tr><td class="k">5</td><td>5×5</td><td>Order matters</td><td>First chest opens (about 3 min in)</td></tr>
+      <tr><td class="k">6–7</td><td>5×5</td><td>Stars and par</td><td>The 3★ counter pulses once</td></tr>
+      <tr><td class="k">8</td><td>5×5 easy</td><td>—</td><td>Shelf intro: a free first figurine</td></tr>
+      <tr><td class="k">10</td><td>6×6 HARD</td><td>A real puzzle</td><td>Daily puzzle unlocks on the home screen</td></tr>
+    </tbody>
+  </table></div>
+  <p><b>Goal:</b> in the first 5–6 minutes the player wins about 10 levels, opens a chest, puts something on the shelf, and sees the daily puzzle and tomorrow's gift. No text tutorials, only the hand animation and small highlights.</p>
+
+  <!-- 12 -->
+  <h2 id="ui"><span class="n">12</span>Screens</h2>
+  <div class="cols">
+    <div><h3>Home</h3><ul>
+      <li>Big "Level 23" play button</li>
+      <li>The shelf (tap to open the shop)</li>
+      <li>Daily puzzle card</li>
+      <li>Gift calendar (badge when ready)</li>
+      <li>Weekend Tower card (weekends only)</li>
+      <li>Coins, settings</li>
+    </ul></div>
+    <div><h3>In a level</h3><ul>
+      <li>Top: level number, swipes left, swipes left for 3★</li>
+      <li>Bottom: undo (with count), hint (with count), restart, pause</li>
+      <li>Board in the middle, as large as possible</li>
+      <li>Chest bar under the top row</li>
+    </ul></div>
+    <div><h3>Other screens</h3><ul>
+      <li>Win (auto-continue after 1.5 s)</li>
+      <li>Out of moves</li>
+      <li>World map (10 worlds, stars per world)</li>
+      <li>Shop and shelf</li>
+      <li>Daily result with Share</li>
+      <li>Settings: sound, music, vibration, notifications, colour symbols always on, privacy, restore purchase</li>
+    </ul></div>
+  </div>
+
+  <!-- 13 -->
+  <h2 id="feel"><span class="n">13</span>Look, feel and sound</h2>
+  <ul>
+    <li><b>Art:</b> chunky toy blocks with soft shading, like plastic building toys, drawn as 2D sprites. Each world has its own background and palette. Blocks always use the same 6 colours with symbols.</li>
+    <li><b>Slide:</b> blocks accelerate briefly, then glide at about 0.06 s per cell (max 0.35 s for the whole swipe), and bounce slightly when they stop.</li>
+    <li><b>Binning:</b> the block shrinks into the bin with a pop, a small burst of its colour, and a short vibration.</li>
+    <li><b>Combo:</b> several blocks binned in one swipe raise the pop sound's pitch with each one and give a slightly bigger burst. This is what looks great in videos.</li>
+    <li><b>Win:</b> confetti in the level's colours and a 3★ fanfare.</li>
+    <li><b>Sound:</b> soft wooden clacks for slides, bright pops for bins, one calm music loop per world (can be turned off).</li>
+  </ul>
+
+  <!-- 14 -->
+  <h2 id="tech"><span class="n">14</span>Technical spec</h2>
+  <ul>
+    <li><b>Unity 6 LTS</b>, 2D, portrait (1080×1920 reference). Android and Google Play Games for PC from one build.</li>
+    <li><b>Code layout:</b>
+      <ul>
+        <li><code>Core</code>: pure C# with no Unity objects: board model, <code>SwipeResolver</code>, <code>Solver</code>, level loading. Fully unit-tested.</li>
+        <li><code>Editor</code>: the generator window and the level picker.</li>
+        <li><code>Game</code>: views and animation (DOTween is fine), input, HUD.</li>
+        <li><code>Meta</code>: coins, chests, shelf, daily, calendar, tower, save.</li>
+        <li><code>Platform</code>: <code>IAdService</code> (AdMob), <code>IAnalytics</code> (Firebase), <code>INotifications</code>, <code>IStore</code> (Google Play Billing).</li>
+      </ul>
+    </li>
+    <li><b>Input:</b> swipe = drag at least 40 px, direction from the larger axis. PC: mouse drag, arrow keys or WASD. Input is ignored while a swipe animation plays.</li>
+    <li><b>Levels</b> are JSON files inside the game (no server). Daily puzzles and towers too.</li>
+    <li><b>Time:</b> daily and weekend logic use the phone's local date. If the clock moves backwards by more than a day, pause daily rewards until the date catches up.</li>
+    <li><b>Size and speed:</b> download under 60 MB; 60 fps on mid-range phones.</li>
+  </ul>
+
+  <!-- 15 -->
+  <h2 id="save"><span class="n">15</span>Save data</h2>
+  <div class="code">{
+  "v": 1,
+  "level": 23,                         // next unplayed level
+  "stars": { "w1_01": 3, "w1_02": 2 },
+  "skipped": ["w2_07"],
+  "coins": 1240, "hints": 3, "undos": 2,
+  "chestProgress": 3,
+  "shelf": ["fig_toyroom", "skin_wood"], "equipped": { "skin": "skin_wood", "bg": "bg_toyroom" },
+  "daily": { "lastSolved": "2026-11-17", "daysSolved": 12 },
+  "calendar": { "nextGift": 4, "lastClaim": "2026-11-16" },
+  "tower": { "weekId": "2026-W47", "reached": 6 },
+  "noForcedAds": false,
+  "settings": { "sound": true, "music": true, "vibration": true, "notifications": true },
+  "stats": { "wins": 140, "losses": 22, "adsWatched": 31, "firstOpen": "2026-11-01" }
+}</div>
+  <p>Save after every level, purchase and claim. Keep a backup copy and restore it if the main file is damaged.</p>
+
+  <!-- 16 -->
+  <h2 id="analytics"><span class="n">16</span>Analytics and targets</h2>
+  <div class="table"><table>
+    <thead><tr><th>Event</th><th>Data</th><th>Tells us</th></tr></thead>
+    <tbody>
+      <tr><td class="k">level_start / level_end</td><td>id, result, swipes, stars, undos, hints, time, attempt</td><td>Which levels are too hard or too easy</td></tr>
+      <tr><td class="k">level_skip</td><td>id</td><td>Levels to fix</td></tr>
+      <tr><td class="k">chest_open</td><td>type, doubled</td><td>Whether rewards land</td></tr>
+      <tr><td class="k">shop_buy</td><td>item, coins left</td><td>Whether the shelf motivates</td></tr>
+      <tr><td class="k">daily_done / daily_share</td><td>number, swipes</td><td>Daily pull and virality</td></tr>
+      <tr><td class="k">calendar_claim / tower_progress</td><td>day / level</td><td>Return reasons working</td></tr>
+      <tr><td class="k">ad_offer / ad_watch</td><td>placement, result</td><td>Ad income and annoyance</td></tr>
+      <tr><td class="k">session_start / session_end</td><td>length, day since install</td><td>Retention</td></tr>
+    </tbody>
+  </table></div>
+  <div class="good"><strong>Targets</strong> (typical goals for casual puzzles, not promises): day-1 return 40%, day-7 15%, day-30 5%; sessions 8–12 minutes, about 3 a day; 90% of new players reach level 10; no level where more than 25% of players skip or quit.</div>
+
+  <!-- 17 -->
+  <h2 id="plan"><span class="n">17</span>6-week build plan</h2>
+  <div class="table"><table>
+    <thead><tr><th>Week</th><th>Build</th><th>Done when</th></tr></thead>
+    <tbody>
+      <tr><td class="k">1</td><td>Board, swipe input, <code>SwipeResolver</code> with tests, win and move limit, 10 hand-made World 1 levels, placeholder art</td><td><b>Fun test:</b> 5 people play the 10 levels; most want to keep going</td></tr>
+      <tr><td class="k">2</td><td>Solver, generator and picker tools; ice and gates; World 1–3 levels</td><td>90 levels picked, all solvable, par matches the bands</td></tr>
+      <tr><td class="k">3</td><td>All remaining mechanics; generate and pick Worlds 4–10; daily puzzle pool and 8 towers</td><td>300 levels + 365 dailies + 8 towers in the game</td></tr>
+      <tr><td class="k">4</td><td>Meta: coins, chests, tokens, shelf and shop, daily, calendar, tower, save</td><td>A full day of play works end to end; save survives a restart</td></tr>
+      <tr><td class="k">5</td><td>Final art, animation, combo effects, sound, first-session flow, ads, purchase, analytics, notifications, PC controls</td><td>A first-time player follows §11 with no help</td></tr>
+      <tr><td class="k">6</td><td>Test with 10 players over several days, tune difficulty from analytics, store page, closed test on Google Play</td><td>No blockers; testers come back on day 2 without being asked</td></tr>
+    </tbody>
+  </table></div>
+  <p class="warn"><strong>Hard rule:</strong> if week 1's fun test fails, change the core rules before building anything else. If the whole thing isn't shippable by week 8, ship what's done or stop. This game must not eat GHAR's time.</p>
+
+  <!-- 18 -->
+  <h2 id="risks"><span class="n">18</span>Risks and open questions</h2>
+  <div class="table"><table>
+    <thead><tr><th>Risk</th><th>What we do</th></tr></thead>
+    <tbody>
+      <tr><td>A very similar game already exists</td><td>Before week 1, search Google Play for "slide sort", "tilt puzzle" and "swipe block sort". Adjust the twist or theme if something is too close.</td></tr>
+      <tr><td>Generated levels feel samey</td><td>The scoring filters in §5, a new mechanic every 30 levels, and a person picking every level.</td></tr>
+      <tr><td>The solver is too slow for big boards</td><td>Block and portal limits (§4); run it only in the editor, and cache hints per level state.</td></tr>
+      <tr><td>Interstitials drive players away</td><td>Strict rules in §10; watch day-1 return and quits right after ads; loosen or remove if needed.</td></tr>
+      <tr><td>Nobody finds the game</td><td>Short gameplay videos (combo moments), the daily share text, and a publisher test.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Open questions</h3>
+  <ul>
+    <li><b>Final name.</b> "Tilt Box" is a working title; check that it's free on Google Play.</li>
+    <li><b>Art:</b> made by your team, a freelancer, or a bought 2D asset pack restyled?</li>
+    <li><b>"No forced ads" purchase:</b> include at launch (recommended) or later?</li>
+  </ul>
+
+  <footer>Sketchify Studio · Tilt Box (working title) · Game design document v1.0. All numbers are starting values to check in the week 1 fun test and the week 6 player test.</footer>
+</div>
