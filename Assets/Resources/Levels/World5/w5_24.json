@@ -1,0 +1,19 @@
+{
+  "id": "w5_24", "world": 5, "w": 6, "h": 8,
+  // Generated (seed 191958323) and auto-picked by score; par 9, optimal 1, randomWin 0%, deadEnds 3, mechanics 3, wrongBin 2, score 6.7, seed 191958323
+  "cells": ["......",
+            "#.#...",
+            "......",
+            "...GR.",
+            "2...1.",
+            "#B....",
+            "#Y.1..",
+            ".#.<2."],
+  "blocks": [
+    { "x": 4, "y": 6, "c": "r", "ice": true },
+    { "x": 2, "y": 5, "c": "b" },
+    { "x": 3, "y": 5, "c": "y" },
+    { "x": 4, "y": 1, "c": "g" }
+  ],
+  "par": 9, "limit": 13, "kind": "normal"
+}

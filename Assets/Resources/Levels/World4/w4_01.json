@@ -1,0 +1,14 @@
+{
+  "id": "w4_01", "world": 4, "w": 4, "h": 4,
+  // Generated (seed -1124592984) and auto-picked by score; par 3, optimal 1, randomWin 5%, deadEnds 2, mechanics 1, wrongBin 1, score 4.9, seed -1124592984
+  "cells": ["....",
+            "#..#",
+            ".s.R",
+            ".sB#"],
+  "blocks": [
+    { "x": 2, "y": 0, "c": "r" },
+    { "x": 0, "y": 3, "c": "b" },
+    { "x": 1, "y": 0, "c": "r" }
+  ],
+  "par": 3, "limit": 7, "kind": "teach"
+}

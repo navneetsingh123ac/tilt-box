@@ -1,0 +1,16 @@
+{
+  "id": "w5_06", "world": 5, "w": 6, "h": 6,
+  // Generated (seed -688224825) and auto-picked by score; par 7, optimal 1, randomWin 0%, deadEnds 2, mechanics 2, wrongBin 1, score 6.6, seed -688224825
+  "cells": ["###...",
+            ".<...#",
+            "......",
+            "....1Y",
+            "R1B.#.",
+            ".....#"],
+  "blocks": [
+    { "x": 0, "y": 3, "c": "r" },
+    { "x": 1, "y": 5, "c": "b" },
+    { "x": 4, "y": 0, "c": "y" }
+  ],
+  "par": 7, "limit": 11, "kind": "normal"
+}

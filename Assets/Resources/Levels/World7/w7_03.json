@@ -1,0 +1,15 @@
+{
+  "id": "w7_03", "world": 7, "w": 5, "h": 5,
+  // Generated (seed -1159681581) and auto-picked by score; par 4, optimal 1, randomWin 7%, deadEnds 2, mechanics 1, wrongBin 0, score 3.6, seed -1159681581
+  "cells": ["#.R.L",
+            ".O.#.",
+            ".....",
+            ".#..#",
+            "....."],
+  "blocks": [
+    { "x": 3, "y": 4, "c": "r" },
+    { "x": 2, "y": 2, "c": "r" },
+    { "x": 0, "y": 4, "key": true }
+  ],
+  "par": 4, "limit": 7, "kind": "teach"
+}

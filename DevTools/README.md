@@ -23,6 +23,16 @@ dotnet run -- slot 3 14                                        # generate one sl
 dotnet run -- fill 3 4 30                                      # generate a range of slots (see below)
 ```
 
+Daily puzzles and Weekend Towers (GDD §9):
+
+```
+dotnet run -- daily 1 365 1500        # Resources/Daily/d001..d365 (par 7-10, no move limit)
+dotnet run -- tower 3                 # Resources/Towers/Tower3/t3_01..t3_10 (hard, with the tower's rule)
+```
+
+If a slot finds nothing at its planned par, the generator lowers the minimum par by 1 (at most twice) and writes
+"BELOW PLANNED PAR" in the level's comment; the content tests only allow that when the comment is there.
+
 `fill <world> [from] [to] [attempts] [--teach] [--force]` generates each slot, stores the 10 best candidates in
 `LevelCandidates/<id>.json` (git-ignored, reproducible) and writes the best one that isn't already used as the
 level file. It skips hand-made slots (World 1 levels 1–10 and teach levels) unless `--teach`, and keeps existing

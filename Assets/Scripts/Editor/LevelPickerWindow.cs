@@ -76,7 +76,7 @@ namespace TiltBox.EditorTools
             SolveResult r = Solver.Solve(l.Layout, l.Start);
             return "par " + r.Par + "  optimal " + r.OptimalSolutionCount + "  randomWin " +
                    (LevelMetrics.RandomWinRate(l.Layout, l.Start, l.Limit) * 100).ToString("0") + "%  deadEnds " +
-                   LevelMetrics.DeadEndsFromStart(l.Layout, l.Start);
+                   LevelMetrics.DeadEndsFromStart(l.Layout, l.Start, l.Limit);
         }
 
         private LevelDefinition Shown => _shown < 0 ? _current : _candidates[_shown].Level;

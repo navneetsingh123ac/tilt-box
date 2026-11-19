@@ -3,6 +3,7 @@
     "rootNamespace": "TiltBox.Core.Tests",
     "references": [
         "TiltBox.Core",
+        "TiltBox.Meta",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

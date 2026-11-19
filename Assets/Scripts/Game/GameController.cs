@@ -1,58 +1,83 @@
 using System.Collections;
 using System.Collections.Generic;
 using TiltBox.Core;
+using TiltBox.Meta;
 using UnityEngine;
 
 namespace TiltBox.Game
 {
     /// <summary>
-    /// Runs the level sequence across all worlds: wires input -> <see cref="LevelSession"/> (rules) -> views.
-    /// The only class that knows about all the others; each view only exposes events and Show methods.
+    /// The composition root and play flow: loads the save and level files, shows the home screen, and runs
+    /// campaign levels, the daily puzzle and the Weekend Tower. Wires input -> <see cref="LevelSession"/> (rules)
+    /// -> views, and reports results to <see cref="MetaGame"/> (economy). Views only expose events and Show methods.
     /// </summary>
     [RequireComponent(typeof(SwipeInput), typeof(BoardView), typeof(HudView))]
+    [RequireComponent(typeof(MetaScreens))]
     public sealed class GameController : MonoBehaviour
     {
+        public enum PlayMode { Home, Campaign, Daily, Tower }
+
         [SerializeField] private float winScreenSeconds = 1.5f;
         [Tooltip("Show the animated hand on the first level until the first swipe (GDD §11).")]
         [SerializeField] private bool handHintOnFirstLevel = true;
-
-        private const string ProgressKey = "tiltbox.level";
-        private const string OldWorld1ProgressKey = "tiltbox.w1.level"; // week-1 builds saved per world
 
         // One-line tips when a world's new mechanic first appears (placeholder for the week-5 tutorial flow).
         private static readonly Dictionary<string, string> Tips = new Dictionary<string, string>
         {
             { "w2_01", "Ice! An iced block skips one swipe, then slides." },
             { "w3_01", "One-way gates: blocks pass only along the arrow." },
+            { "w4_01", "Sticky pads stop a block. The next swipe frees it." },
+            { "w5_01", "Portals: in one, out the other, still sliding." },
+            { "w6_01", "Paint changes a block's colour as it passes." },
+            { "w7_01", "Slide the key into the keyhole to open the locks." },
+            { "w8_01", "Conveyors move a resting block one step after each swipe." },
+            { "w9_01", "Linked blocks move together until one is binned." },
+            { "w10_01", "Rooftop: every trick you've learned, together." },
         };
-        private const string StarsKey = "tiltbox.stars.{0}";
 
         private SwipeInput _input;
         private BoardView _board;
         private HudView _hud;
+        private MetaScreens _screens;
         private Camera _camera;
         private List<LevelDefinition> _levels;
+        private MetaGame _meta;
+        private SaveStore _store;
+
+        private PlayMode _mode = PlayMode.Home;
         private int _index;
+        private int _towerFloor;
         private LevelSession _session;
         private bool _busy;
+        private bool _homeRequested;
+        private int _freeUndos;
+        private readonly List<Direction> _swipeLog = new List<Direction>();
         private GameObject _hand;
         private Vector2Int _lastScreen;
 
         public LevelSession Session => _session;
         public int LevelIndex => _index;
         public bool IsBusy => _busy;
+        public PlayMode Mode => _mode;
+        public MetaGame Meta => _meta;
+
+        /// <summary>Dev tools (auto-player): skip chest popups so play isn't interrupted. Rewards still apply.</summary>
+        public bool QuietRewards { get; set; }
 
         private void Awake()
         {
             _input = GetComponent<SwipeInput>();
             _board = GetComponent<BoardView>();
             _hud = GetComponent<HudView>();
+            _screens = GetComponent<MetaScreens>();
             _camera = Camera.main;
             _hud.Build();
             _input.Swiped += OnSwipe;
             _hud.UndoClicked += OnUndo;
+            _hud.HintClicked += OnHint;
             _hud.RestartClicked += OnRestart;
             _hud.RetryClicked += OnRestart;
+            _hud.HomeClicked += OnHome;
         }
 
         private void Start()
@@ -64,8 +89,35 @@ namespace TiltBox.Game
                 enabled = false;
                 return;
             }
-            int saved = PlayerPrefs.GetInt(ProgressKey, PlayerPrefs.GetInt(OldWorld1ProgressKey, 0));
-            LoadLevel(Mathf.Clamp(saved, 0, _levels.Count - 1));
+
+            var storage = new FileSaveStorage();
+            _store = new SaveStore(storage);
+            SaveData save = _store.Load();
+            if (_store.LastLoadSource == "backup") _store.Save(save); // repair the damaged main file right away
+            _meta = new MetaGame(save, new SystemClock(), _store.Save);
+            Debug.Log("Tilt Box: save loaded from " + _store.LastLoadSource + " (" + storage.Folder + ")");
+
+            _screens.Build(_meta);
+            _screens.PlayCampaign = () => LoadLevel(Mathf.Min(_meta.Save.Level, _levels.Count - 1));
+            _screens.PlayDaily = StartDaily;
+            _screens.PlayTower = StartTower;
+            _screens.CampaignLabel = () => _meta.Save.Level >= _levels.Count ? "All done! Replay" : "Level " + (_meta.Save.Level + 1);
+            _screens.DailyAvailable = () => LoadDailyLevel(_meta.Daily().PoolDay) != null;
+            _screens.TowerAvailable = () => LoadTowerLevel(_meta.Tower().Tower, 1) != null;
+            ShowHome();
+        }
+
+        /// <summary>Dev tools: play on a throwaway in-memory save so the real save file is untouched.</summary>
+        public void UseTemporarySave()
+        {
+            _meta = new MetaGame(new SaveData(), new SystemClock(), null);
+            _screens.Build(_meta);
+            _screens.ShowHome(false);
+        }
+
+        private void OnApplicationPause(bool paused)
+        {
+            if (!paused) _meta?.Touch();
         }
 
         private void Update()
@@ -75,35 +127,99 @@ namespace TiltBox.Game
             DevKeys();
         }
 
-        public void LoadLevel(int index)
+        // ------------------------------------------------------------------ starting levels
+
+        private void ShowHome()
         {
             StopAllCoroutines();
-            _index = (index % _levels.Count + _levels.Count) % _levels.Count;
-            _session = new LevelSession(_levels[_index]);
             _busy = false;
-            _board.Build(_session.Level);
+            _mode = PlayMode.Home;
+            ClearHand();
             _hud.HidePanels();
-            LevelDefinition level = _session.Level;
-            _hud.SetLevel(_index + 1, level.Kind == LevelKind.Hard, level.World, DifficultyPlan.WorldNames[level.World]);
+            _hud.SetVisible(false);
+            _screens.ShowHome(true);
+        }
+
+        /// <summary>Plays campaign level <paramref name="index"/> (0-based across all worlds).</summary>
+        public void LoadLevel(int index)
+        {
+            _index = (index % _levels.Count + _levels.Count) % _levels.Count;
+            LevelDefinition level = _levels[_index];
+            Begin(PlayMode.Campaign, level, "Level " + (_index + 1), "World " + level.World + " · " + DifficultyPlan.WorldNames[level.World]);
             if (Tips.TryGetValue(level.Id, out string tip)) _hud.Toast(tip, 6f);
+            if (handHintOnFirstLevel && _index == 0 && _meta.Save.Level == 0) ShowHintHand(Solver.Hint(level.Layout, level.Start));
+        }
+
+        private void StartDaily()
+        {
+            DailyStatus d = _meta.Daily();
+            LevelDefinition level = LoadDailyLevel(d.PoolDay);
+            if (level == null) { _screens.ShowMessage("Daily puzzle", "Today's puzzle isn't in this build yet."); return; }
+            Begin(PlayMode.Daily, level, "Daily #" + d.Number, "Daily puzzle");
+        }
+
+        private void StartTower()
+        {
+            TowerStatus t = _meta.Tower();
+            if (!t.Open || t.Reached >= DifficultyPlan.LevelsPerTower) return;
+            _towerFloor = t.Reached + 1;
+            LevelDefinition level = LoadTowerLevel(t.Tower, _towerFloor);
+            if (level == null) { _screens.ShowMessage("Weekend Tower", "This tower isn't in this build yet."); return; }
+            Begin(PlayMode.Tower, level, "Floor " + _towerFloor + " / " + DifficultyPlan.LevelsPerTower, "Weekend Tower " + t.Tower);
+        }
+
+        /// <summary>Plays any level outside the sequence (dev tools, previews). Progress isn't saved for it.</summary>
+        public void PlayLevel(LevelDefinition level) => Begin(PlayMode.Home, level, level.Id, "Preview");
+
+        private void Begin(PlayMode mode, LevelDefinition level, string title, string subtitle)
+        {
+            StopAllCoroutines();
+            _mode = mode;
+            _session = new LevelSession(level);
+            _busy = false;
+            _homeRequested = false;
+            _freeUndos = Economy.FreeUndosPerLevel;
+            _swipeLog.Clear();
+            _screens.ShowHome(false);
+            _hud.SetVisible(true);
+            _board.Build(level);
+            _hud.HidePanels();
+            _hud.SetLevel(title, level.Kind == LevelKind.Hard, subtitle, level.Rules.Describe());
+            ClearHand();
             RefreshHud();
             FitCamera();
-            SetHand(handHintOnFirstLevel && _index == 0);
         }
+
+        private static LevelDefinition LoadDailyLevel(int day) => Load("Daily/" + DifficultyPlan.DailyId(day));
+
+        private static LevelDefinition LoadTowerLevel(int tower, int floor) =>
+            Load("Towers/Tower" + tower + "/" + DifficultyPlan.TowerId(tower, floor));
+
+        private static LevelDefinition Load(string resource)
+        {
+            var file = Resources.Load<TextAsset>(resource);
+            if (file == null) return null;
+            try { return LevelParser.Parse(file.text, file.name); }
+            catch (LevelFormatException e) { Debug.LogError(e.Message); return null; }
+        }
+
+        // ------------------------------------------------------------------ playing
 
         /// <summary>Same path as a player swipe; used by input and by automated play-throughs.</summary>
         public void Swipe(Direction dir) => OnSwipe(dir);
 
         private void OnSwipe(Direction dir)
         {
-            if (_busy || _session.Status != SessionStatus.Playing) return; // input ignored while animating (§14)
+            if (_session == null || _busy || _screens.PopupOpen || _screens.HomeVisible) return;
+            if (_session.Status != SessionStatus.Playing) return; // input ignored while animating (§14)
             SwipeResult result = _session.Swipe(dir);
             if (!result.Changed)
             {
-                StartCoroutine(_board.Shake(dir));
+                StartCoroutine(_board.Shake(result.Direction));
                 return;
             }
-            SetHand(false);
+            _swipeLog.Add(dir);
+            ClearHand();
             StartCoroutine(PlaySwipe(result));
         }
 
@@ -114,14 +230,11 @@ namespace TiltBox.Game
             yield return _board.AnimateSwipe(result);
             _busy = false;
 
-            switch (_session.Status)
+            if (_session.Status == SessionStatus.Won) yield return WinFlow();
+            else if (_session.Status == SessionStatus.OutOfMoves)
             {
-                case SessionStatus.Won:
-                    yield return WinFlow();
-                    break;
-                case SessionStatus.OutOfMoves:
-                    _hud.ShowOutOfMoves(true);
-                    break;
+                if (_mode != PlayMode.Home) _meta.OnLevelLost();
+                _hud.ShowOutOfMoves(true);
             }
         }
 
@@ -130,39 +243,128 @@ namespace TiltBox.Game
             _busy = true;
             LevelDefinition level = _session.Level;
             int stars = _session.Stars;
-            string key = string.Format(StarsKey, level.Id);
-            if (stars > PlayerPrefs.GetInt(key, 0)) PlayerPrefs.SetInt(key, stars);
-            int next = _index + 1;
-            PlayerPrefs.SetInt(ProgressKey, next % _levels.Count);
-            PlayerPrefs.Save();
+            switch (_mode)
+            {
+                case PlayMode.Campaign:
+                {
+                    WinReward reward = _meta.OnCampaignWin(_index, level.Id, level.Kind == LevelKind.Hard, stars);
+                    string extra = reward.Coins > 0 ? "+" + reward.Coins + " coins" : reward.NewLevel ? "" : "Replay";
+                    if (reward.SmallChest != null || reward.WorldChest != null) extra += "  ·  Chest!";
+                    _hud.ShowWin(stars, _session.MovesUsed, level.Par, extra);
+                    RefreshHud();
+                    yield return WaitOrHome(winScreenSeconds);
+                    int next = _index + 1;
+                    if (_homeRequested || next >= _levels.Count)
+                    {
+                        ShowHome();
+                        if (next >= _levels.Count) _screens.ShowMessage("You did it!", "Every level is complete.\nCome back for the daily puzzle and the Weekend Tower.");
+                    }
+                    else
+                    {
+                        if (_levels[next].World != level.World)
+                            _hud.Toast("World " + _levels[next].World + ": " + DifficultyPlan.WorldNames[_levels[next].World], 3f);
+                        LoadLevel(next);
+                    }
+                    if (!QuietRewards)
+                    {
+                        if (reward.SmallChest != null) _screens.ShowMessage("Chest!", MetaScreens.Describe(reward.SmallChest));
+                        if (reward.WorldChest != null)
+                            _screens.ShowMessage("World " + level.World + " complete!", "World chest: " + MetaScreens.Describe(reward.WorldChest));
+                    }
+                    break;
+                }
+                case PlayMode.Daily:
+                {
+                    DailyStatus d = _meta.Daily();
+                    DailyResult result = _meta.OnDailySolved(_swipeLog, stars);
+                    _hud.ShowWin(stars, _session.MovesUsed, level.Par, result.Coins > 0 ? "+" + result.Coins + " coins" : "");
+                    yield return WaitOrHome(1f);
+                    ShowHome();
+                    _screens.ShowDailyResult(d.Number, _session.MovesUsed, stars, result, null);
+                    break;
+                }
+                case PlayMode.Tower:
+                {
+                    TowerReward reward = _meta.OnTowerLevelWon(_towerFloor);
+                    _hud.ShowWin(stars, _session.MovesUsed, level.Par, reward != null ? "+" + reward.Coins + " coins" : "");
+                    yield return WaitOrHome(winScreenSeconds);
+                    if (reward != null && reward.Completed)
+                    {
+                        ShowHome();
+                        _screens.ShowMessage("Top of the tower!", "+" + reward.Coins + " coins" + (reward.ItemId != null ? "\nNew box skin: " + ShelfCatalog.Find(reward.ItemId)?.Name : ""));
+                    }
+                    else if (_homeRequested || reward == null) ShowHome();
+                    else StartTower();
+                    break;
+                }
+                default:
+                    _hud.ShowWin(stars, _session.MovesUsed, level.Par, "Preview");
+                    yield return WaitOrHome(winScreenSeconds);
+                    ShowHome();
+                    break;
+            }
+        }
 
-            _hud.ShowWin(stars, _session.MovesUsed, level.Par);
-            yield return new WaitForSeconds(winScreenSeconds);
-            if (next >= _levels.Count) _hud.Toast("You finished every level! Back to level 1.", 3f);
-            else if (_levels[next].World != level.World)
-                _hud.Toast("World " + _levels[next].World + ": " + DifficultyPlan.WorldNames[_levels[next].World], 3f);
-            LoadLevel(next);
+        private IEnumerator WaitOrHome(float seconds)
+        {
+            for (float t = 0; t < seconds && !_homeRequested; t += Time.deltaTime) yield return null;
+        }
+
+        private void OnHome()
+        {
+            if (_busy && _session != null && _session.Status == SessionStatus.Won) { _homeRequested = true; return; }
+            if (_busy) return;
+            ShowHome();
         }
 
         private void OnUndo()
         {
-            if (_busy || !_session.Undo()) return;
+            if (_busy || _session == null || !_session.CanUndo) return;
+            if (!_meta.TryUseUndo(ref _freeUndos))
+            {
+                _hud.Toast("No undos left. Get more in the shop.");
+                return;
+            }
+            _session.Undo();
+            if (_swipeLog.Count > 0) _swipeLog.RemoveAt(_swipeLog.Count - 1);
             _board.ShowState(_session.State);
             _hud.ShowOutOfMoves(false);
             RefreshHud();
         }
 
+        private void OnHint()
+        {
+            if (_busy || _session == null || _session.Status != SessionStatus.Playing) return;
+            if (_meta.Hints <= 0) { _hud.Toast("No hints left. Get more in the shop."); return; }
+            RuleSet rules = _session.Level.Rules;
+            Direction? move = Solver.Hint(_session.Level.Layout, _session.State, rules);
+            if (move == null) { _hud.Toast("No way to win from here. Undo or restart."); return; } // free: nothing to show
+            _meta.TryUseHint();
+            Direction swipe = rules.SwipeFor(move.Value);
+            _hud.Toast("Swipe " + swipe.ToString().ToLowerInvariant(), 3f);
+            ShowHintHand(swipe);
+            RefreshHud();
+        }
+
         private void OnRestart()
         {
-            if (_busy) return;
+            if (_busy || _session == null) return;
             _session.Restart();
+            _freeUndos = Economy.FreeUndosPerLevel;
+            _swipeLog.Clear();
             _board.ShowState(_session.State);
             _hud.HidePanels();
             RefreshHud();
         }
 
-        private void RefreshHud() =>
-            _hud.SetMoves(_session.MovesLeft, _session.MovesLeftForThreeStars, _session.CanUndo);
+        private void RefreshHud()
+        {
+            if (_session == null || _meta == null) return;
+            _hud.SetMoves(_session.Level.HasMoveLimit ? _session.MovesLeft : -1, _session.MovesLeftForThreeStars, _session.CanUndo,
+                _meta.Undos, _freeUndos, _meta.Hints);
+            _hud.SetCoins(_meta.Coins);
+            _hud.SetChestBar(_mode == PlayMode.Campaign, _meta.LevelsToChest, Economy.LevelsPerSmallChest);
+        }
 
         /// <summary>Fits the board into the screen area between the HUD bars, for any aspect ratio.</summary>
         private void FitCamera()
@@ -180,27 +382,30 @@ namespace TiltBox.Game
             _camera.transform.position = new Vector3(0f, (0.5f - bandCentre) * 2f * ortho, -10f);
         }
 
-        // --- first-level hand hint (placeholder: a pulsing dot that slides the solver's first move) ---
+        // ------------------------------------------------------------------ hint hand (placeholder: a sliding dot)
 
-        private void SetHand(bool show)
+        private void ShowHintHand(Direction? swipe)
         {
-            if (_hand != null) Destroy(_hand);
-            _hand = null;
-            if (!show) return;
-            Direction? hint = Solver.Hint(_session.Level.Layout, _session.State);
-            if (!hint.HasValue) return;
+            ClearHand();
+            if (!swipe.HasValue) return;
             _hand = new GameObject("HandHint");
             var r = _hand.AddComponent<SpriteRenderer>();
             r.sprite = PlaceholderArt.Circle;
             r.color = new Color(1f, 1f, 1f, 0.85f);
             r.sortingOrder = 50;
-            StartCoroutine(AnimateHand(_hand.transform, r, hint.Value));
+            StartCoroutine(AnimateHand(_hand.transform, r, swipe.Value));
+        }
+
+        private void ClearHand()
+        {
+            if (_hand != null) Destroy(_hand);
+            _hand = null;
         }
 
         private IEnumerator AnimateHand(Transform hand, SpriteRenderer r, Direction dir)
         {
             GridPos o = dir.Offset();
-            Vector3 from = _board.CellToWorld(_session.State.PositionOf(0));
+            Vector3 from = _board.CellToWorld(new GridPos(_board.Layout.Width / 2, _board.Layout.Height / 2)) - new Vector3(o.X, -o.Y, 0f) * 0.8f;
             Vector3 to = from + new Vector3(o.X, -o.Y, 0f) * 1.6f;
             while (hand != null)
             {
@@ -216,20 +421,16 @@ namespace TiltBox.Game
             }
         }
 
-        // --- developer shortcuts for play-testing (editor and development builds only) ---
+        // ------------------------------------------------------------------ developer shortcuts (editor and dev builds)
 
         private void DevKeys()
         {
-            if (!Debug.isDebugBuild || _busy) return;
+            if (!Debug.isDebugBuild || _busy || _mode != PlayMode.Campaign) return;
             if (Input.GetKeyDown(KeyCode.N)) LoadLevel(_index + 1);
             else if (Input.GetKeyDown(KeyCode.P)) LoadLevel(_index - 1);
             else if (Input.GetKeyDown(KeyCode.R)) OnRestart();
             else if (Input.GetKeyDown(KeyCode.Z) || Input.GetKeyDown(KeyCode.Backspace)) OnUndo();
-            else if (Input.GetKeyDown(KeyCode.H))
-            {
-                Direction? hint = Solver.Hint(_session.Level.Layout, _session.State);
-                _hud.Toast(hint.HasValue ? "Hint: swipe " + hint.Value : "No way to win from here - undo or restart");
-            }
+            else if (Input.GetKeyDown(KeyCode.H)) OnHint();
         }
     }
 }

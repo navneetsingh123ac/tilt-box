@@ -1,0 +1,19 @@
+{
+  "id": "w7_11", "world": 7, "w": 7, "h": 7,
+  // Generated (seed -1720594679) and auto-picked by score; par 9, optimal 1, randomWin 0%, deadEnds 2, mechanics 2, wrongBin 2, score 6.5, seed -1720594679
+  "cells": ["<.sR...",
+            "b..LO..",
+            "#.L#B.L",
+            "..#....",
+            "#.....Y",
+            "..#....",
+            "#.#...G"],
+  "blocks": [
+    { "x": 0, "y": 5, "c": "r" },
+    { "x": 1, "y": 4, "c": "b" },
+    { "x": 3, "y": 5, "c": "y" },
+    { "x": 5, "y": 1, "c": "g" },
+    { "x": 6, "y": 1, "key": true }
+  ],
+  "par": 9, "limit": 12, "kind": "normal"
+}

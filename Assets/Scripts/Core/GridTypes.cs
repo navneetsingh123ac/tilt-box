@@ -74,14 +74,18 @@ namespace TiltBox.Core
         Green = 3,  // g  star
         Purple = 4, // p  heart
         Black = 5,  // k  diamond
+
+        /// <summary>World 7 key block: no colour, fits only a keyhole, never needs binning to win.</summary>
+        Key = 6,    // written as "key": true in level files; 'x' in debug text
     }
 
     public static class BlockColors
     {
+        /// <summary>Real colours (excludes <see cref="BlockColor.Key"/>).</summary>
         public const int Count = 6;
         private const string Letters = "rbygpk";
 
-        /// <summary>Maps a lowercase letter (block) or uppercase letter (bin) to a colour.</summary>
+        /// <summary>Maps a lowercase letter (block) or uppercase letter (bin) to a colour. Never returns Key.</summary>
         public static bool TryFromLetter(char c, out BlockColor color)
         {
             int i = Letters.IndexOf(char.ToLowerInvariant(c));
@@ -89,6 +93,6 @@ namespace TiltBox.Core
             return i >= 0;
         }
 
-        public static char ToLetter(this BlockColor color) => Letters[(int)color];
+        public static char ToLetter(this BlockColor color) => color == BlockColor.Key ? 'x' : Letters[(int)color];
     }
 }

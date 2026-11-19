@@ -1,0 +1,14 @@
+{
+  "id": "w5_03", "world": 5, "w": 5, "h": 5,
+  // Generated (seed 603731968) and auto-picked by score; par 3, optimal 1, randomWin 5%, deadEnds 3, mechanics 1, wrongBin 0, score 4.0, seed 603731968
+  "cells": [".#...",
+            "..R1.",
+            ".##B.",
+            ".#.1.",
+            "#...."],
+  "blocks": [
+    { "x": 3, "y": 0, "c": "r" },
+    { "x": 3, "y": 4, "c": "b" }
+  ],
+  "par": 3, "limit": 7, "kind": "teach"
+}

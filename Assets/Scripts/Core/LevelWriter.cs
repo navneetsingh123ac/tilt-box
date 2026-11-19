@@ -30,12 +30,24 @@ namespace TiltBox.Core
             for (int i = 0; i < s.BlockCount; i++)
             {
                 GridPos p = s.PositionOf(i);
-                sb.Append("    { \"x\": ").Append(Num(p.X)).Append(", \"y\": ").Append(Num(p.Y))
-                  .Append(", \"c\": \"").Append(s.ColorOf(i).ToLetter()).Append('"');
+                sb.Append("    { \"x\": ").Append(Num(p.X)).Append(", \"y\": ").Append(Num(p.Y));
+                if (s.IsKey(i)) sb.Append(", \"key\": true");
+                else sb.Append(", \"c\": \"").Append(s.ColorOf(i).ToLetter()).Append('"');
                 if (s.IsIced(i)) sb.Append(", \"ice\": true");
+                if (s.LinkOf(i) != 0) sb.Append(", \"link\": ").Append(Num(s.LinkOf(i)));
                 sb.Append(i < s.BlockCount - 1 ? " },\n" : " }\n");
             }
-            sb.Append("  ],\n  \"par\": ").Append(Num(level.Par)).Append(", \"limit\": ").Append(Num(level.Limit))
+            sb.Append("  ],\n");
+            RuleSet r = level.Rules;
+            if (!r.IsStandard)
+            {
+                var parts = new System.Collections.Generic.List<string>();
+                if (r.Forbidden != null) parts.Add("\"forbid\": \"" + r.Forbidden.Value.ToString().ToLowerInvariant() + "\"");
+                if (r.Reversed) parts.Add("\"reversed\": true");
+                if (r.ConveyorPasses != 1) parts.Add("\"conveyorPasses\": " + Num(r.ConveyorPasses));
+                sb.Append("  \"rules\": { ").Append(string.Join(", ", parts)).Append(" },\n");
+            }
+            sb.Append("  \"par\": ").Append(Num(level.Par)).Append(", \"limit\": ").Append(Num(level.Limit))
               .Append(", \"kind\": \"").Append(KindName(level.Kind)).Append("\"\n}\n");
             return sb.ToString();
         }
@@ -47,6 +59,7 @@ namespace TiltBox.Core
                 case LevelKind.Easy: return "easy";
                 case LevelKind.Hard: return "hard";
                 case LevelKind.Teach: return "teach";
+                case LevelKind.Daily: return "daily";
                 default: return "normal";
             }
         }

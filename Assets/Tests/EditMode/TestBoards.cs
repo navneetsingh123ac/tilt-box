@@ -6,8 +6,9 @@ using TiltBox.Core;
 namespace TiltBox.Core.Tests
 {
     /// <summary>
-    /// Test-only ASCII boards: level cell characters plus lowercase letters for blocks standing on floor.
-    /// Example: "r.R" = red block, floor, red bin.
+    /// Test-only ASCII boards: level cell characters, lowercase colour letters for blocks standing on floor,
+    /// and 'x' for a key block. Example: "r.R" = red block, floor, red bin. Paint cells (lowercase in level files)
+    /// clash with block letters here, so tests add them with <see cref="WithCell"/>.
     /// </summary>
     internal static class TestBoards
     {
@@ -24,19 +25,13 @@ namespace TiltBox.Core.Tests
                 for (int x = 0; x < w; x++)
                 {
                     char c = rows[y][x];
-                    if (c == '.') cells[y * w + x] = Cell.Floor;
-                    else if (c == '#') cells[y * w + x] = Cell.Wall;
-                    else if (Cell.GateChars.IndexOf(c) >= 0) cells[y * w + x] = Cell.OneWay((Direction)Cell.GateChars.IndexOf(c));
-                    else if (BlockColors.TryFromLetter(c, out BlockColor color))
+                    if (c == 'x' || (char.IsLower(c) && c != 's' && c != 'v' && BlockColors.TryFromLetter(c, out _)))
                     {
-                        if (char.IsUpper(c)) cells[y * w + x] = Cell.Bin(color);
-                        else
-                        {
-                            cells[y * w + x] = Cell.Floor;
-                            positions.Add(new GridPos(x, y));
-                            colors.Add(color);
-                        }
+                        cells[y * w + x] = Cell.Floor;
+                        positions.Add(new GridPos(x, y));
+                        colors.Add(c == 'x' ? BlockColor.Key : (BlockColors.TryFromLetter(c, out BlockColor bc) ? bc : BlockColor.Red));
                     }
+                    else if (Cell.TryParse(c, out Cell cell)) cells[y * w + x] = cell;
                     else throw new ArgumentException("bad test char " + c);
                 }
             }
@@ -46,12 +41,42 @@ namespace TiltBox.Core.Tests
         /// <summary>Same state with the given block indices iced.</summary>
         public static BoardState Ice(BoardState s, params int[] blocks)
         {
+            var ice = new bool[s.BlockCount];
+            foreach (int b in blocks) ice[b] = true;
+            return Rebuild(s, ice, null);
+        }
+
+        /// <summary>Same state with blocks a and b joined by link id.</summary>
+        public static BoardState Link(BoardState s, int a, int b, int id = 1)
+        {
+            var links = new int[s.BlockCount];
+            for (int i = 0; i < s.BlockCount; i++) links[i] = s.LinkOf(i);
+            links[a] = links[b] = id;
+            return Rebuild(s, null, links);
+        }
+
+        private static BoardState Rebuild(BoardState s, bool[] ice, int[] links)
+        {
             var pos = new GridPos[s.BlockCount];
             var col = new BlockColor[s.BlockCount];
-            var ice = new bool[s.BlockCount];
-            for (int i = 0; i < s.BlockCount; i++) { pos[i] = s.PositionOf(i); col[i] = s.ColorOf(i); }
-            foreach (int b in blocks) ice[b] = true;
-            return new BoardState(pos, col, null, ice);
+            var oldIce = new bool[s.BlockCount];
+            var oldLinks = new int[s.BlockCount];
+            for (int i = 0; i < s.BlockCount; i++)
+            {
+                pos[i] = s.PositionOf(i);
+                col[i] = s.ColorOf(i);
+                oldIce[i] = s.IsIced(i);
+                oldLinks[i] = s.LinkOf(i);
+            }
+            return new BoardState(pos, col, null, ice ?? oldIce, links ?? oldLinks, s.LocksOpen);
+        }
+
+        /// <summary>A copy of the layout with one cell replaced (e.g. a paint cell).</summary>
+        public static BoardLayout WithCell(BoardLayout layout, int x, int y, Cell cell)
+        {
+            var target = new GridPos(x, y);
+            int i = 0;
+            return layout.Map(c => layout.PosOf(i++) == target ? cell : c);
         }
 
         /// <summary>Renders a state back to the same notation so tests can compare whole boards.</summary>

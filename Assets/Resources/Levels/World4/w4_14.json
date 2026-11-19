@@ -1,0 +1,17 @@
+{
+  "id": "w4_14", "world": 4, "w": 6, "h": 7,
+  // Generated (seed -975453852) and auto-picked by score; par 7, optimal 1, randomWin 0%, deadEnds 3, mechanics 2, wrongBin 1, score 6.7, seed -975453852
+  "cells": ["..#...",
+            ".RB..Y",
+            "...s#.",
+            ">#....",
+            "...#..",
+            "...s..",
+            ".....#"],
+  "blocks": [
+    { "x": 0, "y": 4, "c": "r", "ice": true },
+    { "x": 4, "y": 6, "c": "b" },
+    { "x": 0, "y": 0, "c": "y" }
+  ],
+  "par": 7, "limit": 11, "kind": "normal"
+}

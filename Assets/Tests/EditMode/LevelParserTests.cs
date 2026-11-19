@@ -57,9 +57,6 @@ namespace TiltBox.Core.Tests
         [Test] public void RejectsWrongRowCount() => AssertRejected(With(@"""h"": 3", @"""h"": 4"), "rows but h is 4");
         [Test] public void RejectsWrongRowLength() => AssertRejected(With(@""".#.""", @""".#..."""), "row 1 has 5");
         [Test] public void RejectsUnknownCellChar() => AssertRejected(With(@""".#.""", @"""@#."""), "unknown cell character '@'");
-        [Test] public void RejectsLaterWorldCell() => AssertRejected(With(@""".#.""", @"""s#."""), "not supported yet");
-        [Test] public void RejectsLaterWorldBlockFeature() =>
-            AssertRejected(With(@"""c"": ""r"" }", @"""c"": ""r"", ""link"": 1 }"), "\"link\"");
         [Test] public void RejectsBlockOnWall() => AssertRejected(With(@"""x"": 0, ""y"": 0", @"""x"": 1, ""y"": 1"), "on a wall");
         [Test] public void RejectsBlockOnBin() => AssertRejected(With(@"""x"": 0, ""y"": 0", @"""x"": 2, ""y"": 2"), "on a bin");
         [Test] public void RejectsBlockOutside() => AssertRejected(With(@"""x"": 0, ""y"": 0", @"""x"": 3, ""y"": 0"), "outside");

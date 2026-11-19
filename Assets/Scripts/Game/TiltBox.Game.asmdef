@@ -3,6 +3,7 @@
     "rootNamespace": "TiltBox.Game",
     "references": [
         "TiltBox.Core",
+        "TiltBox.Meta",
         "UnityEngine.UI"
     ],
     "includePlatforms": [],

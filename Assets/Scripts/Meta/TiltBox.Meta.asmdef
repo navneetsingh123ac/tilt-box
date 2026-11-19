@@ -1,0 +1,16 @@
+{
+    "name": "TiltBox.Meta",
+    "rootNamespace": "TiltBox.Meta",
+    "references": [
+        "TiltBox.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

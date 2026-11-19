@@ -85,8 +85,8 @@ namespace TiltBox.Core.Tests
                 Assert.That(s.ParMin, Is.LessThanOrEqualTo(s.ParMax), s.ToString());
                 Assert.That(s.Width, Is.InRange(LevelParser.MinSize, LevelParser.MaxWidth), s.ToString());
                 Assert.That(s.Height, Is.InRange(LevelParser.MinSize, LevelParser.MaxHeight), s.ToString());
-                Assert.That(s.MaxBlocks, Is.LessThanOrEqualTo(LevelParser.MaxBlocks), s.ToString());
-                Assert.That(s.MinBlocks, Is.GreaterThanOrEqualTo(s.MinColours), s.ToString());
+                Assert.That(s.MaxColours + s.MaxExtraBlocks + s.MaxKeys, Is.LessThanOrEqualTo(LevelParser.MaxBlocks), s.ToString());
+                Assert.That(s.MinColours, Is.GreaterThanOrEqualTo(1), s.ToString());
             }
         }
     }

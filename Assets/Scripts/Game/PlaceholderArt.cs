@@ -31,7 +31,11 @@ namespace TiltBox.Game
             Hex(0x4A4F5A), // black
         };
 
-        public static Color ColourOf(BlockColor c) => BlockColours[(int)c];
+        public static readonly Color KeyGold = Hex(0xE8B23A);
+        public static readonly Color StickyPink = Hex(0xF29BC1);
+        public static readonly Color[] PortalColours = { Hex(0x2BC4C4), Hex(0xF08A24) };
+
+        public static Color ColourOf(BlockColor c) => c == BlockColor.Key ? KeyGold : BlockColours[(int)c];
 
         public static Sprite RoundedSquare => Get("rsq", p => RoundBox(p, 0.92f, 0.30f));
         public static Sprite Ring => Get("ring", p => Mathf.Abs(RoundBox(p, 0.86f, 0.28f)) - 0.07f);
@@ -50,6 +54,7 @@ namespace TiltBox.Game
                 case BlockColor.Green: return Star;
                 case BlockColor.Purple: return Get("sym_heart", Heart);
                 case BlockColor.Black: return Get("sym_diamond", p => Polygon(p, RegularPoints(4, 0.95f, 90f, 0f)));
+                case BlockColor.Key: return KeySymbol;
                 default: throw new ArgumentOutOfRangeException(nameof(c));
             }
         }
@@ -60,6 +65,51 @@ namespace TiltBox.Game
             new Vector2(0f, 0.75f), new Vector2(0.8f, -0.05f), new Vector2(0.8f, -0.5f),
             new Vector2(0f, 0.3f), new Vector2(-0.8f, -0.5f), new Vector2(-0.8f, -0.05f),
         }));
+
+        /// <summary>Key symbol for key blocks: a ring bow, a shaft and two teeth.</summary>
+        public static Sprite KeySymbol => Get("key", p =>
+        {
+            float bow = Mathf.Abs((p - new Vector2(-0.45f, 0f)).magnitude - 0.3f) - 0.12f;
+            float shaft = RoundBox(p - new Vector2(0.25f, 0f), 0.5f, 0.1f, 0.03f);
+            float tooth1 = RoundBox(p - new Vector2(0.55f, -0.18f), 0.08f, 0.16f, 0.02f);
+            float tooth2 = RoundBox(p - new Vector2(0.3f, -0.15f), 0.07f, 0.12f, 0.02f);
+            return Mathf.Min(Mathf.Min(bow, shaft), Mathf.Min(tooth1, tooth2));
+        });
+
+        /// <summary>Keyhole: a circle over a tapered slot.</summary>
+        public static Sprite KeyholeShape => Get("keyhole", p =>
+        {
+            float circle = (p - new Vector2(0f, 0.22f)).magnitude - 0.32f;
+            float slot = Polygon(p, new[] { new Vector2(-0.13f, 0.1f), new Vector2(0.13f, 0.1f), new Vector2(0.26f, -0.6f), new Vector2(-0.26f, -0.6f) });
+            return Mathf.Min(circle, slot);
+        });
+
+        /// <summary>Padlock icon for lock walls.</summary>
+        public static Sprite Padlock => Get("padlock", p =>
+        {
+            float body = RoundBox(p - new Vector2(0f, -0.25f), 0.55f, 0.42f, 0.1f);
+            float shackle = Mathf.Max(Mathf.Abs((p - new Vector2(0f, 0.2f)).magnitude - 0.36f) - 0.1f, -(p.y - 0.15f));
+            return Mathf.Min(body, shackle);
+        });
+
+        /// <summary>Portal: a thick ring with a gap-free swirl (rotated in the view).</summary>
+        public static Sprite PortalRing => Get("portal", p =>
+        {
+            float ring = Mathf.Abs(p.magnitude - 0.7f) - 0.14f;
+            float swirl = Mathf.Abs(p.magnitude - 0.35f) - 0.07f;
+            float cut = Mathf.Max(p.x, -p.y) ; // remove a quarter of the inner swirl so rotation is visible
+            return Mathf.Min(ring, Mathf.Max(swirl, -cut));
+        });
+
+        /// <summary>Sticky pad: a soft square covered in dots.</summary>
+        public static Sprite StickyDots => Get("sticky", p =>
+        {
+            float best = float.MaxValue;
+            for (int i = -1; i <= 1; i++)
+            for (int j = -1; j <= 1; j++)
+                best = Mathf.Min(best, (p - new Vector2(i * 0.55f, j * 0.55f)).magnitude - 0.15f);
+            return best;
+        });
 
         /// <summary>Frost overlay for iced blocks: a rounded square with a few diagonal streaks cut out.</summary>
         public static Sprite Frost => Get("frost", p =>

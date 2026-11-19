@@ -1,0 +1,18 @@
+{
+  "id": "w6_11", "world": 6, "w": 7, "h": 7,
+  // Generated (seed -230858331) and auto-picked by score; par 8, optimal 1, randomWin 0%, deadEnds 2, mechanics 2, wrongBin 3, score 6.6, seed -230858331
+  "cells": [".....B.",
+            "..g#...",
+            "R#...#.",
+            ".....Y.",
+            "#.#....",
+            "y#.G...",
+            ".....s."],
+  "blocks": [
+    { "x": 2, "y": 5, "c": "r", "ice": true },
+    { "x": 6, "y": 6, "c": "b" },
+    { "x": 2, "y": 0, "c": "y" },
+    { "x": 3, "y": 0, "c": "g" }
+  ],
+  "par": 8, "limit": 12, "kind": "normal"
+}

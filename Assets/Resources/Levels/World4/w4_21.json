@@ -1,0 +1,19 @@
+{
+  "id": "w4_21", "world": 4, "w": 6, "h": 7,
+  // Generated (seed 1757598171) and auto-picked by score; par 8, optimal 1, randomWin 0%, deadEnds 2, mechanics 1, wrongBin 2, score 6.7, seed 1757598171
+  "cells": ["....##",
+            "...G..",
+            "...s..",
+            "sY....",
+            "#.B...",
+            "...#..",
+            ".#R..."],
+  "blocks": [
+    { "x": 4, "y": 4, "c": "r" },
+    { "x": 5, "y": 4, "c": "b" },
+    { "x": 5, "y": 3, "c": "y" },
+    { "x": 0, "y": 0, "c": "g" },
+    { "x": 4, "y": 2, "c": "y" }
+  ],
+  "par": 8, "limit": 12, "kind": "normal"
+}

@@ -15,6 +15,8 @@ using TiltBox.Core;
 //                                             LevelCandidates/, and write the best new one as the level file.
 //                                             Hand-made slots (W1 1-10, teach levels) are skipped unless --teach.
 //                                             Existing level files are kept unless --force.
+//   daily [from] [to] [attempts] [--force]    daily puzzles d001-d365 into Resources/Daily
+//   tower <1-8> [attempts] [--force]          one Weekend Tower (10 levels) into Resources/Towers/Tower<n>
 internal static class Program
 {
     private static readonly string ProjectRoot = FindProjectRoot();
@@ -31,6 +33,8 @@ internal static class Program
                 case "check": return Check(args.Skip(1).ToArray());
                 case "slot": return Slot(args.Skip(1).ToArray());
                 case "fill": return Fill(args.Skip(1).ToArray());
+                case "daily": return Daily(args.Skip(1).ToArray());
+                case "tower": return Tower(args.Skip(1).ToArray());
                 default: return Usage();
             }
         }
@@ -69,7 +73,7 @@ internal static class Program
                 continue;
             }
             double randomWin = LevelMetrics.RandomWinRate(level.Layout, level.Start, level.Limit);
-            int deadEnds = LevelMetrics.DeadEndsFromStart(level.Layout, level.Start);
+            int deadEnds = LevelMetrics.DeadEndsFromStart(level.Layout, level.Start, level.Limit);
             MechanicUse use = LevelMetrics.Analyse(level.Layout, level.Start, r.Solution);
             sw.Stop();
 
@@ -121,26 +125,70 @@ internal static class Program
         int from = nums.Length > 1 ? nums[1] : 1;
         int to = nums.Length > 2 ? nums[2] : DifficultyPlan.LevelsPerWorld;
         int attempts = nums.Length > 3 ? nums[3] : 6000;
-        bool teach = flags.Contains("--teach"), force = flags.Contains("--force");
+        bool teach = flags.Contains("--teach");
+        var slots = new List<(SlotSpec, string)>();
+        for (int n = from; n <= to; n++)
+        {
+            if (DifficultyPlan.IsHandMade(world, n) && !teach) { Console.WriteLine($"{DifficultyPlan.IdFor(world, n)}: hand-made slot, skipped"); continue; }
+            SlotSpec spec = DifficultyPlan.SpecFor(world, n);
+            slots.Add((spec, Path.Combine(LevelsDir(world), spec.Id + ".json")));
+        }
+        return FillSlots(slots, attempts, flags.Contains("--force"));
+    }
 
-        Directory.CreateDirectory(LevelsDir(world));
+    private static int Daily(string[] a)
+    {
+        var flags = new HashSet<string>(a.Where(x => x.StartsWith("--")));
+        var nums = a.Where(x => !x.StartsWith("--")).Select(int.Parse).ToArray();
+        int from = nums.Length > 0 ? nums[0] : 1;
+        int to = nums.Length > 1 ? nums[1] : DifficultyPlan.DailyCount;
+        int attempts = nums.Length > 2 ? nums[2] : 3000;
+        string dir = Path.Combine(ProjectRoot, "Assets", "Resources", "Daily");
+        var slots = Enumerable.Range(from, to - from + 1)
+            .Select(d => DifficultyPlan.DailySpec(d))
+            .Select(spec => (spec, Path.Combine(dir, spec.Id + ".json"))).ToList();
+        return FillSlots(slots, attempts, flags.Contains("--force"), wanted: 1);
+    }
+
+    private static int Tower(string[] a)
+    {
+        var flags = new HashSet<string>(a.Where(x => x.StartsWith("--")));
+        var nums = a.Where(x => !x.StartsWith("--")).Select(int.Parse).ToArray();
+        if (nums.Length < 1) return Usage();
+        int tower = nums[0];
+        int attempts = nums.Length > 1 ? nums[1] : 4000;
+        string dir = Path.Combine(ProjectRoot, "Assets", "Resources", "Towers", "Tower" + tower);
+        var slots = Enumerable.Range(1, DifficultyPlan.LevelsPerTower)
+            .Select(l => DifficultyPlan.TowerSpec(tower, l))
+            .Select(spec => (spec, Path.Combine(dir, spec.Id + ".json"))).ToList();
+        return FillSlots(slots, attempts, flags.Contains("--force"), wanted: 1);
+    }
+
+    /// <summary>
+    /// Generates each slot, stores its 10 best candidates and writes the best unused one. A slot that finds
+    /// nothing at its target par is retried with the minimum par lowered by 1 (at most twice); the level file
+    /// says so in its comment, so a designer can see which slots missed the plan.
+    /// </summary>
+    private static int FillSlots(List<(SlotSpec spec, string path)> slots, int attempts, bool force, int wanted = 3)
+    {
         Directory.CreateDirectory(CandidatesDir);
         var taken = new HashSet<string>(AllLevelKeys());
         int failures = 0;
-
-        for (int n = from; n <= to; n++)
+        foreach (var (spec, levelPath) in slots)
         {
-            SlotSpec spec = DifficultyPlan.SpecFor(world, n);
-            string levelPath = Path.Combine(LevelsDir(world), spec.Id + ".json");
-            bool handMade = DifficultyPlan.IsHandMade(world, n);
-            if (handMade && !teach) { Console.WriteLine($"{spec.Id}: hand-made slot, skipped"); continue; }
             if (File.Exists(levelPath) && !force) { Console.WriteLine($"{spec.Id}: exists, kept"); continue; }
-
+            Directory.CreateDirectory(Path.GetDirectoryName(levelPath));
             var sw = Stopwatch.StartNew();
-            List<Candidate> found = new List<Candidate>();
-            // Rare slots (hard, teach) get more attempts with fresh seeds until something passes.
-            for (int round = 0; round < 6 && found.Count(c => !taken.Contains(c.Key)) < 3; round++)
-                found.AddRange(LevelGenerator.Generate(spec, world * 1000 + n + round * 7919, attempts, 10));
+            int seedBase = StableHash(spec.Id) % 100000 + spec.Number * 1000; // string.GetHashCode is random per process
+            int plannedMin = spec.ParMin;
+            var found = new List<Candidate>();
+            for (int relax = 0; relax <= 2 && found.Count(c => !taken.Contains(c.Key)) == 0; relax++)
+            {
+                spec.ParMin = Math.Max(2, plannedMin - relax);
+                int rounds = relax == 0 ? 4 : 3;
+                for (int round = 0; round < rounds && found.Count(c => !taken.Contains(c.Key)) < wanted; round++)
+                    found.AddRange(LevelGenerator.Generate(spec, seedBase + relax * 104729 + round * 7919, attempts, 10));
+            }
             found = found.GroupBy(c => c.Key).Select(g => g.First()).OrderByDescending(c => c.Score).Take(10).ToList();
             File.WriteAllText(Path.Combine(CandidatesDir, spec.Id + ".json"), CandidateFile.Write(spec.Id, found));
 
@@ -152,16 +200,28 @@ internal static class Program
                 continue;
             }
             taken.Add(pick.Key);
-            File.WriteAllText(levelPath, LevelWriter.ToJson(pick.Level,
-                "Generated (seed " + pick.Seed + ") and auto-picked by score; " + pick.Summary.Replace("  ", ", ")));
-            Console.WriteLine($"{spec.Id}: {spec.Kind,-6} {spec.Width}x{spec.Height} {pick.Summary}  {Moves(pick.Solution.Solution)}  ({found.Count} kept) [{sw.Elapsed.TotalSeconds:F0} s]");
+            string note = "Generated (seed " + pick.Seed + ") and auto-picked by score; " + pick.Summary.Replace("  ", ", ");
+            if (pick.Level.Par < plannedMin) note += "; BELOW PLANNED PAR " + plannedMin + " (nothing found there)";
+            File.WriteAllText(levelPath, LevelWriter.ToJson(pick.Level, note));
+            Console.WriteLine($"{spec.Id}: {spec.Kind,-6} {spec.Width}x{spec.Height} {pick.Summary}  {Moves(pick.Solution.Solution)}" +
+                              $"{(pick.Level.Par < plannedMin ? "  RELAXED" : "")}  ({found.Count} kept) [{sw.Elapsed.TotalSeconds:F0} s]");
         }
         return failures == 0 ? 0 : 4;
     }
 
+    private static int StableHash(string s)
+    {
+        unchecked
+        {
+            int h = 17;
+            foreach (char c in s) h = h * 31 + c;
+            return h & 0x7fffffff;
+        }
+    }
+
     private static IEnumerable<string> AllLevelKeys()
     {
-        string root = Path.Combine(ProjectRoot, "Assets", "Resources", "Levels");
+        string root = Path.Combine(ProjectRoot, "Assets", "Resources");
         if (!Directory.Exists(root)) yield break;
         foreach (string f in Directory.GetFiles(root, "*.json", SearchOption.AllDirectories))
         {

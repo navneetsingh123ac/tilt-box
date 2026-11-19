@@ -55,8 +55,9 @@ namespace TiltBox.Core
         }
 
         public static SolveResult Solve(BoardLayout layout, BoardState start,
-            int maxDepth = DefaultMaxDepth, int maxStates = DefaultMaxStates)
+            int maxDepth = DefaultMaxDepth, int maxStates = DefaultMaxStates, RuleSet rules = null)
         {
+            rules = rules ?? RuleSet.Standard;
             if (layout == null) throw new ArgumentNullException(nameof(layout));
             if (start == null) throw new ArgumentNullException(nameof(start));
 
@@ -80,7 +81,8 @@ namespace TiltBox.Core
                     Node node = nodes[n];
                     foreach (Direction dir in DirectionExtensions.All)
                     {
-                        SwipeResult r = SwipeResolver.Resolve(layout, node.State, dir);
+                        if (!rules.AllowsMove(dir)) continue;
+                        SwipeResult r = SwipeResolver.Resolve(layout, node.State, dir, rules.ConveyorPasses);
                         if (!r.Changed) continue;
                         string key = r.After.CanonicalKey;
                         if (index.TryGetValue(key, out int existing))
@@ -107,7 +109,11 @@ namespace TiltBox.Core
             return new SolveResult(true, path.Count, path, nodes[goal].Paths, nodes.Count, hitCap);
         }
 
-        /// <summary>Optimal next swipe from the current state, or null if the state cannot be won.</summary>
-        public static Direction? Hint(BoardLayout layout, BoardState state) => Solve(layout, state).FirstMove;
+        /// <summary>
+        /// Optimal next board move from the current state, or null if the state cannot be won. With reversed
+        /// tower rules the player must swipe <see cref="RuleSet.SwipeFor"/> of this.
+        /// </summary>
+        public static Direction? Hint(BoardLayout layout, BoardState state, RuleSet rules = null) =>
+            Solve(layout, state, DefaultMaxDepth, DefaultMaxStates, rules).FirstMove;
     }
 }

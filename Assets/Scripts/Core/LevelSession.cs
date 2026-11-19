@@ -30,7 +30,8 @@ namespace TiltBox.Core
             Restart();
         }
 
-        public int Limit => Level.Limit + _bonusMoves;
+        /// <summary>Swipes allowed. Daily puzzles have no limit (int.MaxValue).</summary>
+        public int Limit => Level.HasMoveLimit ? Level.Limit + _bonusMoves : int.MaxValue;
         public int MovesLeft => Math.Max(0, Limit - MovesUsed);
 
         /// <summary>Swipes left that still earn 3 stars (shown on the HUD). 0 once past par.</summary>
@@ -39,13 +40,17 @@ namespace TiltBox.Core
         public bool CanUndo => _history.Count > 0 && Status != SessionStatus.Won;
 
         /// <summary>
-        /// Applies a swipe. Returns null when the session is not accepting input (won or out of moves).
-        /// An ignored swipe (nothing moved) is returned with Changed == false and costs no move.
+        /// Applies a player swipe (tower rules may reverse or forbid it). Returns null when the session is not
+        /// accepting input (won or out of moves). An ignored or forbidden swipe is returned with
+        /// Changed == false and costs no move.
         /// </summary>
-        public SwipeResult Swipe(Direction dir)
+        public SwipeResult Swipe(Direction swipe)
         {
             if (Status != SessionStatus.Playing) return null;
-            SwipeResult result = SwipeResolver.Resolve(Level.Layout, State, dir);
+            RuleSet rules = Level.Rules;
+            Direction dir = rules.BoardDirection(swipe);
+            if (!rules.AllowsMove(dir)) return new SwipeResult(dir, State, State, System.Array.Empty<BlockMove>());
+            SwipeResult result = SwipeResolver.Resolve(Level.Layout, State, dir, rules.ConveyorPasses);
             if (!result.Changed) return result;
 
             _history.Push(State);
