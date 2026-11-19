@@ -14,3 +14,28 @@
 *.aab
 DevTools/**/bin/
 DevTools/**/obj/
+
+# --- Never commit secrets or signed app builds ---
+# Signing keys (Android keystores, certificates, private keys)
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.pem
+*.key
+keystore.properties
+# Environment files and service credentials (keep a .env.example with blank values instead)
+.env
+.env.*
+!.env.example
+google-services.json
+GoogleService-Info.plist
+*credentials*.json
+*service-account*.json
+# App builds and store uploads
+*.apk
+*.aab
+*.ipa
+*.exe
+/[Bb]uild*/
+/Release*/
